@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Outpasses</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>My Outpasses</h1>
+        <p class="subtitle">View your current outpass status and previous requests</p>
+
+        <section>
+    <h2>Current Outpass</h2>
+
+    <button id="refresh-button">Refresh Status</button>
+
+    <div id="current-outpass" class="card">
+        Loading...
+    </div>
+</section>
+
+        <section>
+    <h2>Previous Outpass History</h2>
+
+    <label for="status-filter">Filter by Status:</label>
+
+    <select id="status-filter">
+        <option value="ALL">All</option>
+        <option value="APPROVED">Approved</option>
+        <option value="REJECTED">Rejected</option>
+        <option value="COMPLETED">Completed</option>
+    </select>
+    <br><br>
+
+<label for="search-history">Search:</label>
+
+<input
+    type="text"
+    id="search-history"
+    placeholder="Search destination or reason"
+>
+
+    <div id="history-container">
+        Loading...
+    </div>
+</section>
+
+    </div>
+
+    <script src="js/outpass.js"></script>
+
+</body>
+</html>
