@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from backend.app.db.database import SessionLocal
-from backend.app.repositories.outpass_repository import OutpassRepository
+from backend.app.schemas.outpass_schema import StudentOutpassHistoryResponse 
 from backend.app.services.outpass_service import OutpassService
 from backend.app.schemas.outpass_schema import OutpassResponse
 
@@ -22,7 +22,7 @@ def get_db():
         db.close()
 
 
-@router.get("/my")
+@router.get("/my", response_model=StudentOutpassHistoryResponse)
 def get_my_outpasses(
     student_id: str,
     db: Session = Depends(get_db)

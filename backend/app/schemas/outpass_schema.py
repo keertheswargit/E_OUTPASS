@@ -17,3 +17,8 @@ class OutpassResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+        class StudentOutpassHistoryResponse(BaseModel):
+    student_id: str
+    current: OutpassResponse | None
+    history: list[OutpassResponse]
