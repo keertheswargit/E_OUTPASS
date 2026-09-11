@@ -1,19 +1,11 @@
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
-from backend.app.models.outpass import Outpass
+from backend.app.db.mongodb import outpasses_collection
 
 
 class OutpassRepository:
 
-    def __init__(self, db: Session):
-        self.db = db
-
     def get_by_student(self, student_id: str):
-        statement = (
-            select(Outpass)
-            .where(Outpass.student_id == student_id)
-            .order_by(Outpass.request_timestamp.desc())
+        return list(
+            outpasses_collection.find(
+                {"student_id": student_id}
+            ).sort("request_timestamp", -1)
         )
-
-        return self.db.scalars(statement).all()

@@ -1,29 +1,21 @@
-from backend.app.repositories.outpass_repository import OutpassRepository
-
-
 class OutpassService:
 
-    def __init__(self, repository: OutpassRepository):
+    def __init__(self, repository):
         self.repository = repository
 
     def get_student_outpasses(self, student_id: str):
         outpasses = self.repository.get_by_student(student_id)
 
-        if not outpasses:
-            return None, []
-
-        active_statuses = {"PENDING", "APPROVED"}
+        for outpass in outpasses:
+            outpass["_id"] = str(outpass["_id"])
 
         current = None
+        history = []
 
         for outpass in outpasses:
-            if outpass.status in active_statuses:
+            if outpass["status"] in ["PENDING", "APPROVED"] and current is None:
                 current = outpass
-                break
-
-        history = [
-            outpass for outpass in outpasses
-            if outpass != current
-        ]
+            else:
+                history.append(outpass)
 
         return current, history
