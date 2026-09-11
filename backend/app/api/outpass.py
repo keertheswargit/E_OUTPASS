@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from backend.app.db.database import SessionLocal
-from backend.app.schemas.outpass_schema import StudentOutpassHistoryResponse 
+from backend.app.repositories.outpass_repository import OutpassRepository
 from backend.app.services.outpass_service import OutpassService
-from backend.app.schemas.outpass_schema import OutpassResponse
+from backend.app.schemas.outpass_schema import StudentOutpassHistoryResponse
 
 
 router = APIRouter(
