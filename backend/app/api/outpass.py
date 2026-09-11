@@ -1,10 +1,7 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException
 
-from backend.app.db.database import SessionLocal
 from backend.app.repositories.outpass_repository import OutpassRepository
 from backend.app.services.outpass_service import OutpassService
-from backend.app.schemas.outpass_schema import OutpassResponse
 
 
 router = APIRouter(
@@ -13,27 +10,41 @@ router = APIRouter(
 )
 
 
-def get_db():
-    db = SessionLocal()
-
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-@router.get("/my")
-def get_my_outpasses(
-    student_id: str,
-    db: Session = Depends(get_db)
-):
-    repository = OutpassRepository(db)
+@router.get("/pending")
+def get_pending_outpasses():
+    repository = OutpassRepository()
     service = OutpassService(repository)
 
-    current, history = service.get_student_outpasses(student_id)
+    return service.get_pending_outpasses()
 
-    return {
-        "student_id": student_id,
-        "current": current,
-        "history": history
-    }
+
+@router.put("/{outpass_id}/approve")
+def approve_outpass(outpass_id: str):
+    repository = OutpassRepository()
+    service = OutpassService(repository)
+
+    result = service.approve_outpass(outpass_id)
+
+    if result.modified_count == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Outpass is not pending or does not exist"
+        )
+
+    return {"message": "Outpass approved successfully"}
+
+
+@router.put("/{outpass_id}/reject")
+def reject_outpass(outpass_id: str):
+    repository = OutpassRepository()
+    service = OutpassService(repository)
+
+    result = service.reject_outpass(outpass_id)
+
+    if result.modified_count == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Outpass is not pending or does not exist"
+        )
+
+    return {"message": "Outpass rejected successfully"}

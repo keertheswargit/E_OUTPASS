@@ -6,24 +6,22 @@ class OutpassService:
     def __init__(self, repository: OutpassRepository):
         self.repository = repository
 
-    def get_student_outpasses(self, student_id: str):
-        outpasses = self.repository.get_by_student(student_id)
-
-        if not outpasses:
-            return None, []
-
-        active_statuses = {"PENDING", "APPROVED"}
-
-        current = None
+    def get_pending_outpasses(self):
+        outpasses = self.repository.get_pending_outpasses()
 
         for outpass in outpasses:
-            if outpass.status in active_statuses:
-                current = outpass
-                break
+            outpass["_id"] = str(outpass["_id"])
 
-        history = [
-            outpass for outpass in outpasses
-            if outpass != current
-        ]
+        return outpasses
 
-        return current, history
+    def approve_outpass(self, outpass_id):
+        return self.repository.update_status(
+            outpass_id,
+            "APPROVED"
+        )
+
+    def reject_outpass(self, outpass_id):
+        return self.repository.update_status(
+            outpass_id,
+            "REJECTED"
+        )

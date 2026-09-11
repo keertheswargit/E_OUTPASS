@@ -1,19 +1,32 @@
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
-from backend.app.models.outpass import Outpass
+from backend.app.db.mongodb import outpasses_collection
 
 
 class OutpassRepository:
 
-    def __init__(self, db: Session):
-        self.db = db
-
-    def get_by_student(self, student_id: str):
-        statement = (
-            select(Outpass)
-            .where(Outpass.student_id == student_id)
-            .order_by(Outpass.request_timestamp.desc())
+    def get_pending_outpasses(self):
+        return list(
+            outpasses_collection.find(
+                {"status": "PENDING"}
+            ).sort("request_timestamp", -1)
         )
 
-        return self.db.scalars(statement).all()
+    def get_by_id(self, outpass_id):
+        from bson import ObjectId
+
+        return outpasses_collection.find_one(
+            {"_id": ObjectId(outpass_id)}
+        )
+
+    def update_status(self, outpass_id, status):
+        from bson import ObjectId
+        from datetime import datetime
+
+        return outpasses_collection.update_one(
+            {"_id": ObjectId(outpass_id), "status": "PENDING"},
+            {
+                "$set": {
+                    "status": status,
+                    "decision_timestamp": datetime.utcnow()
+                }
+            }
+        )
