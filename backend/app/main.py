@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.api.outpass import router as outpass_router
-
+from backend.app.api.notification import router as notification_router
 app = FastAPI(title="E-Outpass")
 
 # Allow frontend to communicate with backend during development
@@ -15,7 +15,7 @@ app.add_middleware(
 )
 
 app.include_router(outpass_router)
-
+app.include_router(notification_router)
 
 @app.get("/")
 def root():

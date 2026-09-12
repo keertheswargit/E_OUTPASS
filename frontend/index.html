@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,45 +16,59 @@
         <h1>My Outpasses</h1>
         <p class="subtitle">View your current outpass status and previous requests</p>
 
+        <!-- Notifications -->
         <section>
-    <h2>Current Outpass</h2>
+            <h2>Notifications</h2>
 
-    <button id="refresh-button">Refresh Status</button>
+            <div id="notifications-container">
+                Loading...
+            </div>
+        </section>
 
-    <div id="current-outpass" class="card">
-        Loading...
-    </div>
-</section>
-
+        <!-- Current Outpass -->
         <section>
-    <h2>Previous Outpass History</h2>
+            <h2>Current Outpass</h2>
 
-    <label for="status-filter">Filter by Status:</label>
+            <button id="refresh-button">Refresh Status</button>
 
-    <select id="status-filter">
-        <option value="ALL">All</option>
-        <option value="APPROVED">Approved</option>
-        <option value="REJECTED">Rejected</option>
-        <option value="COMPLETED">Completed</option>
-    </select>
-    <br><br>
+            <div id="current-outpass" class="card">
+                Loading...
+            </div>
+        </section>
 
-<label for="search-history">Search:</label>
+        <!-- Previous Outpass History -->
+        <section>
+            <h2>Previous Outpass History</h2>
 
-<input
-    type="text"
-    id="search-history"
-    placeholder="Search destination or reason"
->
+            <label for="status-filter">Filter by Status:</label>
 
-    <div id="history-container">
-        Loading...
-    </div>
-</section>
+            <select id="status-filter">
+                <option value="ALL">All</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="COMPLETED">Completed</option>
+            </select>
+
+            <br><br>
+
+            <label for="search-history">Search:</label>
+
+            <input
+                type="text"
+                id="search-history"
+                placeholder="Search destination or reason"
+            >
+
+            <div id="history-container">
+                Loading...
+            </div>
+
+        </section>
 
     </div>
 
     <script src="js/outpass.js"></script>
 
 </body>
+
 </html>
