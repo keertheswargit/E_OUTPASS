@@ -15,6 +15,75 @@ function formatDateTime(dateTime) {
 }
 
 
+/* =========================
+   F004 - Load Notifications
+   ========================= */
+
+async function loadNotifications() {
+    try {
+        const response = await fetch(
+            `http://127.0.0.1:8000/api/notifications/${studentId}`
+        );
+
+        if (!response.ok) {
+            throw new Error("Failed to load notifications");
+        }
+
+        const notifications = await response.json();
+
+        displayNotifications(notifications);
+
+    } catch (error) {
+        document.getElementById("notifications-container").innerHTML =
+            "<p>Unable to load notifications.</p>";
+
+        console.error(error);
+    }
+}
+
+
+function displayNotifications(notifications) {
+    const container =
+        document.getElementById("notifications-container");
+
+    if (notifications.length === 0) {
+        container.innerHTML =
+            "<p>No notifications.</p>";
+        return;
+    }
+
+    let content = "";
+
+    notifications.forEach(notification => {
+
+        content += `
+            <div class="card">
+                <p>
+                    <strong>${notification.message}</strong>
+                </p>
+
+                <p>
+                    Status:
+                    <span class="status status-${notification.status}">
+                        ${notification.status}
+                    </span>
+                </p>
+
+                <p>
+                    ${formatDateTime(notification.created_at)}
+                </p>
+            </div>
+        `;
+    });
+
+    container.innerHTML = content;
+}
+
+
+/* =========================
+   F003 - Load Outpasses
+   ========================= */
+
 async function loadOutpasses() {
     try {
         const response = await fetch(
@@ -31,6 +100,7 @@ async function loadOutpasses() {
         displayHistory(data.history);
 
     } catch (error) {
+
         document.getElementById("current-outpass").innerHTML =
             "<p>Unable to load outpass details.</p>";
 
@@ -43,10 +113,13 @@ async function loadOutpasses() {
 
 
 function displayCurrent(outpass) {
-    const container = document.getElementById("current-outpass");
+
+    const container =
+        document.getElementById("current-outpass");
 
     if (!outpass) {
-        container.innerHTML = "<p>No current outpass request.</p>";
+        container.innerHTML =
+            "<p>No current outpass request.</p>";
         return;
     }
 
@@ -77,17 +150,21 @@ function displayCurrent(outpass) {
 
 
 function displayHistory(history) {
+
     historyData = history;
 
-    const container = document.getElementById("history-container");
+    const container =
+        document.getElementById("history-container");
 
     if (history.length === 0) {
-        container.innerHTML = "<p>No previous outpass history.</p>";
+        container.innerHTML =
+            "<p>No previous outpass history.</p>";
         return;
     }
 
     let table = `
         <table class="history-table">
+
             <thead>
                 <tr>
                     <th>Destination</th>
@@ -104,8 +181,10 @@ function displayHistory(history) {
     `;
 
     history.forEach(outpass => {
+
         table += `
             <tr>
+
                 <td>${outpass.destination}</td>
 
                 <td>${outpass.reason}</td>
@@ -131,6 +210,7 @@ function displayHistory(history) {
                 <td>
                     ${outpass.warden_remarks || "No remarks"}
                 </td>
+
             </tr>
         `;
     });
@@ -143,7 +223,9 @@ function displayHistory(history) {
     container.innerHTML = table;
 }
 
+
 function filterHistory() {
+
     const selectedStatus =
         document.getElementById("status-filter").value;
 
@@ -167,6 +249,10 @@ function filterHistory() {
 }
 
 
+/* =========================
+   Event Listeners
+   ========================= */
+
 document.getElementById("status-filter").addEventListener(
     "change",
     filterHistory
@@ -177,9 +263,17 @@ document.getElementById("search-history").addEventListener(
     "input",
     filterHistory
 );
+
+
 document.getElementById("refresh-button").addEventListener(
     "click",
     loadOutpasses
 );
 
+
+/* =========================
+   Initial Load
+   ========================= */
+
 loadOutpasses();
+loadNotifications();
