@@ -1,0 +1,22 @@
+{
+  "name": "e-outpass-system",
+  "version": "1.0.0",
+  "description": "Smart Hostel Outpass Permission Management System - Warden Review & Data Store",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node tests/outpassStore.test.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "keywords": [
+    "hostel",
+    "outpass",
+    "warden",
+    "permission",
+    "e-outpass"
+  ],
+  "author": "Keertheswar",
+  "license": "ISC"
+}

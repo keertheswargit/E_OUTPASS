@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hostel E-Outpass System | Warden Review Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="top-nav">
+    <div class="nav-brand">
+      <div class="brand-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">E-Outpass System</span>
+        <span class="brand-subtitle">Smart Hostel Permission Management</span>
+      </div>
+    </div>
+
+    <div class="nav-center-time">
+      <span class="pulse-indicator"></span>
+      <span id="liveClock">Loading time...</span>
+    </div>
+
+    <div class="nav-user">
+      <div class="user-avatar">RW</div>
+      <div class="user-details">
+        <span class="user-name">Dr. R. Sundaram</span>
+        <span class="user-role">Chief Warden (Hostel Admin)</span>
+      </div>
+      <button id="btnOpenSimulator" class="btn btn-secondary btn-sm" title="Simulate a student submitting an outpass">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>+ Test Student Request</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <!-- KPI Metrics Ribbon -->
+    <section class="metrics-grid">
+      <div class="metric-card metric-pending">
+        <div class="metric-header">
+          <span class="metric-label">Pending Reviews</span>
+          <span class="metric-badge-live">LIVE</span>
+        </div>
+        <div class="metric-value" id="kpiPending">-</div>
+        <div class="metric-sub" id="kpiUrgentSub">Calculating urgency...</div>
+      </div>
+
+      <div class="metric-card metric-approved">
+        <div class="metric-header">
+          <span class="metric-label">Approved Today</span>
+          <div class="metric-icon-circle green">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+        </div>
+        <div class="metric-value" id="kpiApproved">-</div>
+        <div class="metric-sub">Permissions granted</div>
+      </div>
+
+      <div class="metric-card metric-outside">
+        <div class="metric-header">
+          <span class="metric-label">Currently Outside</span>
+          <div class="metric-icon-circle blue">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          </div>
+        </div>
+        <div class="metric-value" id="kpiOutside">-</div>
+        <div class="metric-sub">Active off-campus students</div>
+      </div>
+
+      <div class="metric-card metric-rejected">
+        <div class="metric-header">
+          <span class="metric-label">Rejected Today</span>
+          <div class="metric-icon-circle red">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </div>
+        </div>
+        <div class="metric-value" id="kpiRejected">-</div>
+        <div class="metric-sub">Denied / policy violation</div>
+      </div>
+    </section>
+
+    <!-- Review Screen Card -->
+    <section class="dashboard-panel">
+
+      <!-- Panel Header & View Tabs -->
+      <div class="panel-header">
+        <div class="panel-title-area">
+          <h1 class="panel-title">[SCRUM06B-F002-UI-001] Warden Pending-Requests Review</h1>
+          <p class="panel-desc">Verify student credentials, validate parent consent, inspect transit timelines, and approve or reject outpass permissions.</p>
+        </div>
+        <div class="view-tabs">
+          <button class="tab-btn active" data-view="PENDING" id="tabPending">
+            <span>Pending Queue</span>
+            <span class="tab-counter" id="tabPendingCount">0</span>
+          </button>
+          <button class="tab-btn" data-view="ALL" id="tabAll">
+            <span>All Requests History</span>
+            <span class="tab-counter" id="tabAllCount">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Search and Filter Bar -->
+      <div class="filter-bar">
+        <div class="search-box">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Search by Student Name, Roll No (e.g. 23IT101), Room, or Destination..." autocomplete="off">
+          <button id="btnClearSearch" class="btn-clear hidden" title="Clear Search">&times;</button>
+        </div>
+
+        <div class="filter-group">
+          <!-- Hostel Block Filter -->
+          <div class="select-wrapper">
+            <label for="blockFilter" class="sr-only">Hostel Block</label>
+            <select id="blockFilter">
+              <option value="ALL">All Hostel Blocks</option>
+              <option value="Block A">Block A (Boys)</option>
+              <option value="Block B">Block B (Girls)</option>
+              <option value="Block C">Block C (Boys)</option>
+            </select>
+          </div>
+
+          <!-- Outpass Type Filter -->
+          <div class="select-wrapper">
+            <label for="typeFilter" class="sr-only">Outpass Type</label>
+            <select id="typeFilter">
+              <option value="ALL">All Outpass Types</option>
+              <option value="DAY_PASS">Day Pass (Local)</option>
+              <option value="WEEKEND_PASS">Weekend Pass (Hometown)</option>
+              <option value="EMERGENCY_PASS">Emergency Pass (Medical)</option>
+              <option value="VACATION_PASS">Vacation Pass</option>
+            </select>
+          </div>
+
+          <button id="btnRefresh" class="btn btn-outline" title="Refresh Requests">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            <span>Refresh</span>
+          </button>
+
+          <button id="btnResetSeed" class="btn btn-outline btn-warning" title="Reset dataset to demo seed data">
+            <span>Reset Demo Data</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Pending Table Section -->
+      <div class="table-responsive">
+        <table class="outpass-table" id="outpassTable">
+          <thead>
+            <tr>
+              <th>Request ID & Type</th>
+              <th>Student Details</th>
+              <th>Room & Block</th>
+              <th>Destination & Purpose</th>
+              <th>Departure & Expected Return</th>
+              <th>Parent / Guardian Contact</th>
+              <th class="text-right">Warden Decision</th>
+            </tr>
+          </thead>
+          <tbody id="outpassTableBody">
+            <!-- Dynamically populated via app.js -->
+            <tr>
+              <td colspan="7" class="loading-state">
+                <div class="spinner"></div>
+                <span>Loading pending outpass requests...</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State View -->
+      <div id="emptyState" class="empty-state hidden">
+        <div class="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <h3>No Requests Found</h3>
+        <p id="emptyStateMsg">There are no pending outpass requests matching the current filters.</p>
+        <button id="btnEmptyReset" class="btn btn-primary btn-sm">Clear All Filters</button>
+      </div>
+
+      <!-- Table Footer / Summary Bar -->
+      <div class="table-footer">
+        <span id="showingCountText">Showing 0 requests</span>
+        <div class="footer-legend">
+          <span class="legend-item"><span class="badge-dot badge-dot-emergency"></span> Medical / Emergency</span>
+          <span class="legend-item"><span class="badge-dot badge-dot-urgent"></span> Departs Soon (&lt; 3h)</span>
+          <span class="legend-item"><span class="badge-dot badge-dot-verified"></span> Parent Consent Confirmed</span>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: Detailed Warden Review Dialog (dialog closedby="any") -->
+  <!-- ==================================================== -->
+  <dialog id="reviewModal" class="app-modal" closedby="any" aria-labelledby="modalStudentName">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <span class="modal-chip" id="modalRequestId">OP-2026-001</span>
+          <span class="modal-chip-type" id="modalTypeBadge">Weekend Pass</span>
+          <span class="modal-chip-status" id="modalStatusBadge">PENDING</span>
+        </div>
+        <button type="button" class="btn-close" id="btnCloseReviewModal" aria-label="Close dialog">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        
+        <!-- Student Information Card -->
+        <div class="review-grid">
+          <div class="student-profile-dossier">
+            <div class="avatar-large" id="modalAvatar">KS</div>
+            <div class="dossier-info">
+              <h2 id="modalStudentName">Keertheswar S</h2>
+              <div class="dossier-meta">
+                <span class="meta-tag" id="modalRollNo">Roll: 23IT101</span>
+                <span class="meta-tag" id="modalDept">B.Tech IT - 3rd Year</span>
+              </div>
+              <div class="dossier-meta">
+                <span class="meta-tag highlight" id="modalBlockRoom">Block A (Boys) • Room A-304</span>
+                <span class="meta-tag" id="modalPhone">📞 +91 98765 43210</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Academic & Hostel Discipline Scorecard -->
+          <div class="discipline-card">
+            <h4>Discipline & History Track</h4>
+            <div class="discipline-metrics">
+              <div class="disc-stat">
+                <span class="disc-val" id="modalHistPasses">3</span>
+                <span class="disc-label">Passes This Sem</span>
+              </div>
+              <div class="disc-stat">
+                <span class="disc-val green" id="modalHistAttendance">94%</span>
+                <span class="disc-label">Attendance</span>
+              </div>
+              <div class="disc-stat">
+                <span class="disc-val" id="modalHistCgpa">8.82</span>
+                <span class="disc-label">CGPA</span>
+              </div>
+              <div class="disc-stat">
+                <span class="disc-val" id="modalHistOverstays">0</span>
+                <span class="disc-label">Overstay Record</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Outpass Journey Timeline -->
+        <div class="section-box">
+          <h3 class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            Outpass Schedule & Destination
+          </h3>
+          <div class="schedule-grid">
+            <div class="sched-item">
+              <span class="sched-label">Destination</span>
+              <span class="sched-val bold" id="modalDestination">Trichy (Native Place)</span>
+            </div>
+            <div class="sched-item">
+              <span class="sched-label">Departure Scheduled</span>
+              <span class="sched-val" id="modalDepTime">Today, 4:00 PM</span>
+            </div>
+            <div class="sched-item">
+              <span class="sched-label">Expected Return</span>
+              <span class="sched-val" id="modalRetTime">Sunday, 8:00 PM</span>
+            </div>
+            <div class="sched-item">
+              <span class="sched-label">Estimated Absence</span>
+              <span class="sched-val bold blue-text" id="modalDuration">52 Hours</span>
+            </div>
+          </div>
+          <div class="reason-box">
+            <span class="sched-label">Declared Purpose / Reason:</span>
+            <p id="modalReason" class="reason-text">Going home for family function and weekend break.</p>
+          </div>
+        </div>
+
+        <!-- Parent / Guardian Contact & Verification Check -->
+        <div class="section-box parent-verify-box">
+          <div class="parent-verify-header">
+            <div>
+              <h3 class="section-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                Parent / Guardian Verification
+              </h3>
+              <div class="parent-meta">
+                <span class="parent-name" id="modalParentName">Senthil Nathan (Father)</span>
+                <span class="parent-phone" id="modalParentPhone">+91 94432 10987</span>
+              </div>
+            </div>
+            <div class="parent-actions">
+              <a id="btnCallParent" href="tel:+919443210987" class="btn btn-outline btn-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                Call Parent
+              </a>
+              <button type="button" id="btnToggleConsent" class="btn btn-secondary btn-sm">
+                ✔ Mark Consent Confirmed
+              </button>
+            </div>
+          </div>
+          <div class="consent-status-banner" id="modalConsentBanner">
+            <span class="status-indicator"></span>
+            <span id="modalConsentText">Parent consent verified via SMS confirmation</span>
+          </div>
+        </div>
+
+        <!-- Warden Review Actions & Remarks Input -->
+        <div class="section-box warden-action-box">
+          <h3 class="section-title">Warden Review Decision</h3>
+          
+          <!-- Rejection Presets (shown when rejecting) -->
+          <div id="rejectionPresetContainer" class="rejection-presets">
+            <span class="preset-label">Standard Rejection Reasons:</span>
+            <div class="preset-buttons">
+              <button type="button" class="btn-preset" data-reason="Parent / guardian consent could not be verified.">Parent Unreachable</button>
+              <button type="button" class="btn-preset" data-reason="Curfew restriction: Outpass time exceeds hostel rules (9:00 PM gate closing).">Curfew Limit Exceeded</button>
+              <button type="button" class="btn-preset" data-reason="Internal assessment exams or mandatory academic sessions scheduled.">Academic Conflict / Exam</button>
+              <button type="button" class="btn-preset" data-reason="Student has reached maximum permissible outpasses for this month.">Outpass Quota Exceeded</button>
+              <button type="button" class="btn-preset" data-reason="Incomplete or invalid destination details provided.">Invalid Destination Info</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="wardenRemarksInput">Warden Remarks / Instructions / Rejection Reason:</label>
+            <textarea id="wardenRemarksInput" rows="2" placeholder="e.g. Return before 8:30 PM. Inform hostel security on entry. Or specify reason for rejection..."></textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btnCancelModal">Cancel</button>
+        <div class="modal-decision-btns">
+          <button type="button" class="btn btn-danger" id="btnRejectOutpass">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            Reject Request
+          </button>
+          <button type="button" class="btn btn-success" id="btnApproveOutpass">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Approve & Issue E-Outpass
+          </button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: Digital E-Outpass Gate Pass Viewer -->
+  <!-- ==================================================== -->
+  <dialog id="passModal" class="app-modal" closedby="any" aria-labelledby="gatePassTitle">
+    <div class="modal-card pass-card">
+      <div class="modal-header">
+        <h3 id="gatePassTitle">Digital Gate E-Outpass</h3>
+        <button type="button" class="btn-close" id="btnClosePassModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="gate-pass-container" id="printablePass">
+          <div class="pass-watermark">APPROVED</div>
+          <div class="pass-college-header">
+            <div class="pass-emblem">🏛️</div>
+            <h4>CAMPUS HOSTEL ADMINISTRATION</h4>
+            <p>Official Digital Movement Authorization Pass</p>
+          </div>
+
+          <div class="pass-token-badge">
+            <span class="token-lbl">GATE SECURITY TOKEN</span>
+            <span class="token-code" id="passTokenCode">EOP-SEC-8921</span>
+          </div>
+
+          <div class="pass-details-table">
+            <div class="pass-row">
+              <span class="p-label">Student Name:</span>
+              <span class="p-val bold" id="passStudentName">Keertheswar S</span>
+            </div>
+            <div class="pass-row">
+              <span class="p-label">Roll Number:</span>
+              <span class="p-val" id="passRollNo">23IT101</span>
+            </div>
+            <div class="pass-row">
+              <span class="p-label">Hostel & Room:</span>
+              <span class="p-val" id="passHostelRoom">Block A • Room A-304</span>
+            </div>
+            <div class="pass-row">
+              <span class="p-label">Destination:</span>
+              <span class="p-val" id="passDestination">Trichy (Native Place)</span>
+            </div>
+            <div class="pass-row">
+              <span class="p-label">Departure Window:</span>
+              <span class="p-val" id="passDepWindow">2026-09-17 16:00</span>
+            </div>
+            <div class="pass-row">
+              <span class="p-label">Return Deadline:</span>
+              <span class="p-val bold red-text" id="passRetWindow">2026-09-19 20:00</span>
+            </div>
+            <div class="pass-row">
+              <span class="p-label">Warden Remarks:</span>
+              <span class="p-val" id="passRemarks">Approved. Return safely before gate closing.</span>
+            </div>
+            <div class="pass-row">
+              <span class="p-label">Approved By:</span>
+              <span class="p-val bold" id="passWarden">Chief Warden Dr. R. Sundaram</span>
+            </div>
+          </div>
+
+          <!-- Digital Security Verification Footer -->
+          <div class="pass-verification-footer">
+            <div class="qr-placeholder">
+              <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm8-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm11 0h2v2h-2v-2zm-3-2h4v2h-4v-2zm6 0h2v4h-2v-4zm-4 4h2v2h-2v-2zm4 2h2v2h-2v-2z"></path>
+              </svg>
+              <span>Scan at Main Gate</span>
+            </div>
+            <div class="security-seal">
+              <div class="seal-circle">
+                <span>HOSTEL</span>
+                <span>SECURITY</span>
+                <span>VERIFIED</span>
+              </div>
+              <span class="seal-timestamp" id="passTimestamp">Authorized: 2026-09-17</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btnPrintPass">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Print Outpass
+        </button>
+        <button type="button" class="btn btn-primary" id="btnClosePassModalBtn">Done</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: Student Request Submission Simulator -->
+  <!-- ==================================================== -->
+  <dialog id="simulatorModal" class="app-modal" closedby="any" aria-labelledby="simModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 id="simModalTitle">Student Outpass Request Simulator</h3>
+          <p class="modal-subtitle">Submit a request as a student to test real-time appearance in Warden Pending Queue</p>
+        </div>
+        <button type="button" class="btn-close" id="btnCloseSimulatorModal">&times;</button>
+      </div>
+      <form id="simulatorForm">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="simRollNo">College Roll No / ID *</label>
+              <input type="text" id="simRollNo" required placeholder="e.g. 23IT101" value="23IT101">
+            </div>
+            <div class="form-group">
+              <label for="simStudentName">Student Full Name *</label>
+              <input type="text" id="simStudentName" required placeholder="e.g. Keertheswar S" value="Keertheswar S">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="simDepartment">Department & Year</label>
+              <input type="text" id="simDepartment" placeholder="e.g. Information Technology" value="Information Technology">
+            </div>
+            <div class="form-group">
+              <label for="simHostelBlock">Hostel Block *</label>
+              <select id="simHostelBlock" required>
+                <option value="Block A (Boys)">Block A (Boys)</option>
+                <option value="Block B (Girls)">Block B (Girls)</option>
+                <option value="Block C (Boys)">Block C (Boys)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="simRoomNo">Room No *</label>
+              <input type="text" id="simRoomNo" required placeholder="e.g. A-304" value="A-304">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="simOutpassType">Outpass Type *</label>
+              <select id="simOutpassType" required>
+                <option value="DAY_PASS">Day Pass (Local visit)</option>
+                <option value="WEEKEND_PASS">Weekend Pass (Hometown)</option>
+                <option value="EMERGENCY_PASS">Emergency Pass (Medical)</option>
+                <option value="VACATION_PASS">Vacation Pass</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="simDestination">Destination Place *</label>
+              <input type="text" id="simDestination" required placeholder="e.g. Coimbatore Bus Stand" value="Gandhipuram City Center">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="simDepTime">Departure Date & Time *</label>
+              <input type="datetime-local" id="simDepTime" required>
+            </div>
+            <div class="form-group">
+              <label for="simRetTime">Expected Return Date & Time *</label>
+              <input type="datetime-local" id="simRetTime" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="simReason">Reason for Permission *</label>
+            <textarea id="simReason" rows="2" required placeholder="Detailed reason for hostel exit...">Project group discussion and purchasing electronics equipment from city market.</textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="simParentName">Parent / Guardian Name</label>
+              <input type="text" id="simParentName" placeholder="Father/Mother Name" value="Senthil Nathan (Father)">
+            </div>
+            <div class="form-group">
+              <label for="simParentPhone">Parent Phone Number *</label>
+              <input type="tel" id="simParentPhone" required placeholder="+91 94432 10987" value="+91 94432 10987">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btnCancelSimulator">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitSimulator">
+            <span>Submit Student Request</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="js/app.js"></script>
+</body>
+</html>
