@@ -1,19 +1,21 @@
 /**
  * E-Outpass Management System
- * SCRUM06B-F002-UI-001: Warden Pending Requests Review Dashboard
- * Frontend Application Controller
+ * Role-Based Authentication, Student Portal & Warden Review Screen Controller
  */
 
 document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   // App State
   // ==========================================
+  let currentUser = JSON.parse(sessionStorage.getItem("e_outpass_user") || "null");
+
   const state = {
-    currentView: "PENDING", // "PENDING" or "ALL"
+    currentView: "PENDING", // For Warden: "PENDING" or "ALL"
     filterBlock: "ALL",
     filterType: "ALL",
     searchQuery: "",
     requests: [],
+    studentRequests: [],
     stats: null,
     selectedRequest: null
   };
@@ -22,7 +24,36 @@ document.addEventListener("DOMContentLoaded", () => {
   // DOM Elements
   // ==========================================
   const el = {
+    // Auth & Views
+    loginSection: document.getElementById("loginSection"),
+    appShell: document.getElementById("appShell"),
+    wardenPortalSection: document.getElementById("wardenPortalSection"),
+    studentPortalSection: document.getElementById("studentPortalSection"),
+    loginForm: document.getElementById("loginForm"),
+    loginIdentifier: document.getElementById("loginIdentifier"),
+    loginPassword: document.getElementById("loginPassword"),
+    loginSelectedRole: document.getElementById("loginSelectedRole"),
+    tabLoginStudent: document.getElementById("tabLoginStudent"),
+    tabLoginWarden: document.getElementById("tabLoginWarden"),
+    loginErrorBanner: document.getElementById("loginErrorBanner"),
+    loginErrorText: document.getElementById("loginErrorText"),
+    lblIdentifier: document.getElementById("lblIdentifier"),
+    btnFillStudent1: document.getElementById("btnFillStudent1"),
+    btnFillStudent2: document.getElementById("btnFillStudent2"),
+    btnFillStudent3: document.getElementById("btnFillStudent3"),
+    btnFillStudent4: document.getElementById("btnFillStudent4"),
+    btnFillWarden1: document.getElementById("btnFillWarden1"),
+    btnFillWarden2: document.getElementById("btnFillWarden2"),
+    btnLogout: document.getElementById("btnLogout"),
+
+    // Nav Bar
+    navUserAvatar: document.getElementById("navUserAvatar"),
+    navUserName: document.getElementById("navUserName"),
+    navUserRole: document.getElementById("navUserRole"),
+    navSubtitle: document.getElementById("navSubtitle"),
     liveClock: document.getElementById("liveClock"),
+
+    // Warden KPI
     kpiPending: document.getElementById("kpiPending"),
     kpiUrgentSub: document.getElementById("kpiUrgentSub"),
     kpiApproved: document.getElementById("kpiApproved"),
@@ -32,21 +63,31 @@ document.addEventListener("DOMContentLoaded", () => {
     tabAll: document.getElementById("tabAll"),
     tabPendingCount: document.getElementById("tabPendingCount"),
     tabAllCount: document.getElementById("tabAllCount"),
+
+    // Warden Controls
     searchInput: document.getElementById("searchInput"),
     btnClearSearch: document.getElementById("btnClearSearch"),
     blockFilter: document.getElementById("blockFilter"),
     typeFilter: document.getElementById("typeFilter"),
     btnRefresh: document.getElementById("btnRefresh"),
-    btnResetSeed: document.getElementById("btnResetSeed"),
     outpassTable: document.getElementById("outpassTable"),
     outpassTableBody: document.getElementById("outpassTableBody"),
     emptyState: document.getElementById("emptyState"),
-    emptyStateMsg: document.getElementById("emptyStateMsg"),
-    btnEmptyReset: document.getElementById("btnEmptyReset"),
     showingCountText: document.getElementById("showingCountText"),
     toastContainer: document.getElementById("toastContainer"),
 
-    // Review Modal
+    // Student Portal Elements
+    studentCardAvatar: document.getElementById("studentCardAvatar"),
+    studentCardName: document.getElementById("studentCardName"),
+    studentCardRoll: document.getElementById("studentCardRoll"),
+    studentCardDept: document.getElementById("studentCardDept"),
+    studentCardRoom: document.getElementById("studentCardRoom"),
+    btnStudentApplyPass: document.getElementById("btnStudentApplyPass"),
+    studentTable: document.getElementById("studentTable"),
+    studentTableBody: document.getElementById("studentTableBody"),
+    studentEmptyState: document.getElementById("studentEmptyState"),
+
+    // Review Modal (Warden)
     reviewModal: document.getElementById("reviewModal"),
     btnCloseReviewModal: document.getElementById("btnCloseReviewModal"),
     btnCancelModal: document.getElementById("btnCancelModal"),
@@ -79,7 +120,13 @@ document.addEventListener("DOMContentLoaded", () => {
     btnApproveOutpass: document.getElementById("btnApproveOutpass"),
     rejectionPresets: document.querySelectorAll(".btn-preset"),
 
-    // Pass Modal
+    // Status History Modal ([SCRUM06B-F002-DB-001])
+    statusHistoryModal: document.getElementById("statusHistoryModal"),
+    btnCloseHistModal: document.getElementById("btnCloseHistModal"),
+    btnCloseHistBtn: document.getElementById("btnCloseHistBtn"),
+    historyTimelineList: document.getElementById("historyTimelineList"),
+
+    // Digital Gate Pass Modal
     passModal: document.getElementById("passModal"),
     btnClosePassModal: document.getElementById("btnClosePassModal"),
     btnClosePassModalBtn: document.getElementById("btnClosePassModalBtn"),
@@ -95,14 +142,23 @@ document.addEventListener("DOMContentLoaded", () => {
     passWarden: document.getElementById("passWarden"),
     passTimestamp: document.getElementById("passTimestamp"),
 
-    // Simulator Modal
-    btnOpenSimulator: document.getElementById("btnOpenSimulator"),
+    // Student Application Form Modal
     simulatorModal: document.getElementById("simulatorModal"),
     btnCloseSimulatorModal: document.getElementById("btnCloseSimulatorModal"),
     btnCancelSimulator: document.getElementById("btnCancelSimulator"),
     simulatorForm: document.getElementById("simulatorForm"),
+    simRollNo: document.getElementById("simRollNo"),
+    simStudentName: document.getElementById("simStudentName"),
+    simDepartment: document.getElementById("simDepartment"),
+    simHostelBlock: document.getElementById("simHostelBlock"),
+    simRoomNo: document.getElementById("simRoomNo"),
+    simOutpassType: document.getElementById("simOutpassType"),
+    simDestination: document.getElementById("simDestination"),
     simDepTime: document.getElementById("simDepTime"),
-    simRetTime: document.getElementById("simRetTime")
+    simRetTime: document.getElementById("simRetTime"),
+    simReason: document.getElementById("simReason"),
+    simParentName: document.getElementById("simParentName"),
+    simParentPhone: document.getElementById("simParentPhone")
   };
 
   // ==========================================
@@ -126,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  [el.reviewModal, el.passModal, el.simulatorModal].forEach(setupDialogLightDismiss);
+  [el.reviewModal, el.passModal, el.simulatorModal, el.statusHistoryModal].forEach(setupDialogLightDismiss);
 
   // ==========================================
   // Live Header Clock
@@ -150,7 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updateLiveClock();
 
   // ==========================================
-  // Formatters & Utility Helpers
+  // Utilities
   // ==========================================
   function formatDateTime(isoString) {
     if (!isoString) return "-";
@@ -183,7 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getInitials(name) {
-    if (!name) return "ST";
+    if (!name) return "US";
     const parts = name.trim().split(" ");
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -193,40 +249,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getTypeBadge(type) {
     switch (type) {
-      case "DAY_PASS":
-        return `<span class="badge-type badge-day">Day Pass</span>`;
-      case "WEEKEND_PASS":
-        return `<span class="badge-type badge-weekend">Weekend Pass</span>`;
-      case "EMERGENCY_PASS":
-        return `<span class="badge-type badge-emergency">🚨 Emergency Pass</span>`;
-      case "VACATION_PASS":
-        return `<span class="badge-type badge-vacation">Vacation Pass</span>`;
-      default:
-        return `<span class="badge-type badge-day">${type || "Pass"}</span>`;
+      case "DAY_PASS": return `<span class="badge-type badge-day">Day Pass</span>`;
+      case "WEEKEND_PASS": return `<span class="badge-type badge-weekend">Weekend Pass</span>`;
+      case "EMERGENCY_PASS": return `<span class="badge-type badge-emergency">🚨 Emergency Pass</span>`;
+      case "VACATION_PASS": return `<span class="badge-type badge-vacation">Vacation Pass</span>`;
+      default: return `<span class="badge-type badge-day">${type || "Pass"}</span>`;
     }
   }
 
   function getStatusBadge(status) {
     switch (status) {
-      case "APPROVED":
-        return `<span class="status-badge approved">✔ Approved</span>`;
-      case "REJECTED":
-        return `<span class="status-badge rejected">✖ Rejected</span>`;
-      case "PENDING":
-        return `<span class="status-badge pending">⏳ Pending</span>`;
-      default:
-        return `<span class="status-badge">${status}</span>`;
+      case "APPROVED": return `<span class="status-badge approved">✔ Approved</span>`;
+      case "REJECTED": return `<span class="status-badge rejected">✖ Rejected</span>`;
+      case "PENDING": return `<span class="status-badge pending">⏳ Pending</span>`;
+      default: return `<span class="status-badge">${status}</span>`;
     }
   }
 
-  function isUrgentDeparture(departureTimeIso) {
-    const depTime = new Date(departureTimeIso).getTime();
-    const now = Date.now();
-    const threeHours = 3 * 3600 * 1000;
-    return depTime > now && depTime <= now + threeHours;
-  }
-
-  // Toast System
   function showToast(message, type = "success") {
     const toast = document.createElement("div");
     toast.className = `toast toast-${type}`;
@@ -243,7 +282,155 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==========================================
-  // API Calls
+  // Authentication & Portal View Switcher
+  // ==========================================
+  function checkAuthState() {
+    if (!currentUser) {
+      // Show Login Section
+      el.loginSection.classList.remove("hidden");
+      el.appShell.classList.add("hidden");
+    } else {
+      // Show App Shell
+      el.loginSection.classList.add("hidden");
+      el.appShell.classList.remove("hidden");
+
+      // Update Nav Details
+      el.navUserName.textContent = currentUser.name;
+      el.navUserRole.textContent = currentUser.role === "WARDEN" ? "Hostel Warden" : `Student • ${currentUser.id}`;
+      el.navUserAvatar.textContent = getInitials(currentUser.name);
+
+      if (currentUser.role === "WARDEN") {
+        el.navSubtitle.textContent = "Warden Review & Approval Portal";
+        el.wardenPortalSection.classList.remove("hidden");
+        el.studentPortalSection.classList.add("hidden");
+        fetchStats();
+        fetchWardenRequests();
+      } else {
+        el.navSubtitle.textContent = "Student Permission & Outpass Portal";
+        el.wardenPortalSection.classList.add("hidden");
+        el.studentPortalSection.classList.remove("hidden");
+        setupStudentPortal();
+      }
+    }
+  }
+
+  // Role Tab Switching on Login Form
+  el.tabLoginStudent.addEventListener("click", () => {
+    el.tabLoginStudent.classList.add("active");
+    el.tabLoginWarden.classList.remove("active");
+    el.loginSelectedRole.value = "STUDENT";
+    el.lblIdentifier.textContent = "College Roll Number / Student ID";
+    el.loginIdentifier.placeholder = "e.g. 23IT101";
+    el.loginErrorBanner.classList.add("hidden");
+  });
+
+  el.tabLoginWarden.addEventListener("click", () => {
+    el.tabLoginWarden.classList.add("active");
+    el.tabLoginStudent.classList.remove("active");
+    el.loginSelectedRole.value = "WARDEN";
+    el.lblIdentifier.textContent = "Hostel Warden ID";
+    el.loginIdentifier.placeholder = "e.g. WARDEN-001";
+    el.loginErrorBanner.classList.add("hidden");
+  });
+
+  // Demo Quick Fill Buttons (Registered Users)
+  if (el.btnFillStudent1) {
+    el.btnFillStudent1.addEventListener("click", () => {
+      el.tabLoginStudent.click();
+      el.loginIdentifier.value = "23IT101";
+      el.loginPassword.value = "student123";
+      el.loginErrorBanner.classList.add("hidden");
+    });
+  }
+
+  if (el.btnFillStudent2) {
+    el.btnFillStudent2.addEventListener("click", () => {
+      el.tabLoginStudent.click();
+      el.loginIdentifier.value = "23CS142";
+      el.loginPassword.value = "student123";
+      el.loginErrorBanner.classList.add("hidden");
+    });
+  }
+
+  if (el.btnFillStudent3) {
+    el.btnFillStudent3.addEventListener("click", () => {
+      el.tabLoginStudent.click();
+      el.loginIdentifier.value = "23ME034";
+      el.loginPassword.value = "student123";
+      el.loginErrorBanner.classList.add("hidden");
+    });
+  }
+
+  if (el.btnFillStudent4) {
+    el.btnFillStudent4.addEventListener("click", () => {
+      el.tabLoginStudent.click();
+      el.loginIdentifier.value = "23BT028";
+      el.loginPassword.value = "student123";
+      el.loginErrorBanner.classList.add("hidden");
+    });
+  }
+
+  if (el.btnFillWarden1) {
+    el.btnFillWarden1.addEventListener("click", () => {
+      el.tabLoginWarden.click();
+      el.loginIdentifier.value = "WARDEN-001";
+      el.loginPassword.value = "warden123";
+      el.loginErrorBanner.classList.add("hidden");
+    });
+  }
+
+  if (el.btnFillWarden2) {
+    el.btnFillWarden2.addEventListener("click", () => {
+      el.tabLoginWarden.click();
+      el.loginIdentifier.value = "WARDEN-002";
+      el.loginPassword.value = "warden123";
+      el.loginErrorBanner.classList.add("hidden");
+    });
+  }
+
+  // Login Submission
+  el.loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    el.loginErrorBanner.classList.add("hidden");
+
+    const identifier = el.loginIdentifier.value.trim();
+    const password = el.loginPassword.value;
+    const role = el.loginSelectedRole.value;
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password, role })
+      });
+
+      const json = await res.json();
+
+      if (json.success) {
+        currentUser = json.user;
+        sessionStorage.setItem("e_outpass_user", JSON.stringify(currentUser));
+        showToast(json.message, "success");
+        checkAuthState();
+      } else {
+        el.loginErrorText.textContent = json.error || "Authentication failed.";
+        el.loginErrorBanner.classList.remove("hidden");
+      }
+    } catch (err) {
+      el.loginErrorText.textContent = "Server connection error. Please ensure backend is running.";
+      el.loginErrorBanner.classList.remove("hidden");
+    }
+  });
+
+  // Logout
+  el.btnLogout.addEventListener("click", () => {
+    currentUser = null;
+    sessionStorage.removeItem("e_outpass_user");
+    showToast("Logged out successfully.", "info");
+    checkAuthState();
+  });
+
+  // ==========================================
+  // WARDEN PORTAL: Data Fetch & Render
   // ==========================================
   async function fetchStats() {
     try {
@@ -251,44 +438,31 @@ document.addEventListener("DOMContentLoaded", () => {
       const json = await res.json();
       if (json.success) {
         state.stats = json.data;
-        updateKpiDisplay(json.data);
+        el.kpiPending.textContent = json.data.pendingCount ?? 0;
+        el.kpiApproved.textContent = json.data.approvedToday ?? 0;
+        el.kpiOutside.textContent = json.data.currentlyOutside ?? 0;
+        el.kpiRejected.textContent = json.data.rejectedToday ?? 0;
+        el.tabPendingCount.textContent = json.data.pendingCount ?? 0;
+        el.tabAllCount.textContent = json.data.totalRequests ?? 0;
+
+        if (json.data.urgentPending > 0) {
+          el.kpiUrgentSub.innerHTML = `<span class="red-text font-bold">🚨 ${json.data.urgentPending} departing in &lt; 3h</span>`;
+        } else {
+          el.kpiUrgentSub.textContent = "All queues normal";
+        }
       }
     } catch (err) {
       console.error("Failed to fetch stats:", err);
     }
   }
 
-  function updateKpiDisplay(stats) {
-    el.kpiPending.textContent = stats.pendingCount ?? 0;
-    el.kpiApproved.textContent = stats.approvedToday ?? 0;
-    el.kpiOutside.textContent = stats.currentlyOutside ?? 0;
-    el.kpiRejected.textContent = stats.rejectedToday ?? 0;
-
-    el.tabPendingCount.textContent = stats.pendingCount ?? 0;
-    el.tabAllCount.textContent = stats.totalRequests ?? 0;
-
-    if (stats.urgentPending > 0) {
-      el.kpiUrgentSub.innerHTML = `<span class="red-text font-bold">🚨 ${stats.urgentPending} departing in &lt; 3h</span>`;
-    } else {
-      el.kpiUrgentSub.textContent = "All queues normal";
-    }
-  }
-
-  async function fetchRequests() {
+  async function fetchWardenRequests() {
     try {
       const params = new URLSearchParams();
-      if (state.currentView === "PENDING") {
-        params.append("status", "PENDING");
-      }
-      if (state.filterBlock !== "ALL") {
-        params.append("hostelBlock", state.filterBlock);
-      }
-      if (state.filterType !== "ALL") {
-        params.append("outpassType", state.filterType);
-      }
-      if (state.searchQuery.trim()) {
-        params.append("search", state.searchQuery.trim());
-      }
+      if (state.currentView === "PENDING") params.append("status", "PENDING");
+      if (state.filterBlock !== "ALL") params.append("hostelBlock", state.filterBlock);
+      if (state.filterType !== "ALL") params.append("outpassType", state.filterType);
+      if (state.searchQuery.trim()) params.append("search", state.searchQuery.trim());
 
       const endpoint = state.currentView === "PENDING"
         ? `/api/outpasses/pending?${params.toString()}`
@@ -299,54 +473,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (json.success) {
         state.requests = json.data;
-        renderTable(json.data);
+        renderWardenTable(json.data);
       }
     } catch (err) {
-      console.error("Failed to load requests:", err);
-      el.outpassTableBody.innerHTML = `
-        <tr>
-          <td colspan="7" class="loading-state">
-            <span class="red-text">Error loading requests. Please check backend server.</span>
-          </td>
-        </tr>
-      `;
+      console.error("Error loading warden requests:", err);
     }
   }
 
-  async function updateOutpassStatus(id, status, wardenRemarks) {
-    try {
-      const res = await fetch(`/api/outpasses/${id}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status,
-          wardenRemarks,
-          reviewedBy: "Chief Warden Dr. R. Sundaram"
-        })
-      });
-      const json = await res.json();
-      if (json.success) {
-        showToast(`Outpass ${id} has been ${status.toLowerCase()}!`, "success");
-        if (el.reviewModal.open) el.reviewModal.close();
-        await fetchStats();
-        await fetchRequests();
-
-        // If approved, prompt option to view gate pass
-        if (status === "APPROVED") {
-          openPassModal(json.data);
-        }
-      } else {
-        showToast(json.error || "Failed to update outpass", "error");
-      }
-    } catch (err) {
-      showToast("Network error while updating outpass", "error");
-    }
-  }
-
-  // ==========================================
-  // Render Pending & History Table
-  // ==========================================
-  function renderTable(records) {
+  function renderWardenTable(records) {
     if (!records || records.length === 0) {
       el.outpassTableBody.innerHTML = "";
       el.emptyState.classList.remove("hidden");
@@ -360,10 +494,9 @@ document.addEventListener("DOMContentLoaded", () => {
     el.showingCountText.textContent = `Showing ${records.length} ${records.length === 1 ? "request" : "requests"}`;
 
     el.outpassTableBody.innerHTML = records.map(req => {
-      const isUrgent = req.status === "PENDING" && isUrgentDeparture(req.departureTime);
+      const isUrgent = req.status === "PENDING" && new Date(req.departureTime).getTime() - Date.now() <= 3 * 3600 * 1000;
       const isEmergency = req.outpassType === "EMERGENCY_PASS";
-      const rowClass = isEmergency ? "urgent-row" : isUrgent ? "urgent-row" : "";
-      const initials = getInitials(req.studentName);
+      const rowClass = isEmergency || isUrgent ? "urgent-row" : "";
       const duration = calculateDuration(req.departureTime, req.expectedReturnTime);
 
       const parentConsentBadge = req.parentConsent === "VERIFIED" || req.parentConsent === "CONFIRMED_VIA_SMS"
@@ -372,74 +505,51 @@ document.addEventListener("DOMContentLoaded", () => {
 
       return `
         <tr class="${rowClass}" data-id="${req.id}">
-          <!-- Request ID & Type -->
           <td>
             <div class="req-id-col">
               <span class="req-id">${req.id}</span>
               ${getTypeBadge(req.outpassType)}
             </div>
           </td>
-
-          <!-- Student Details -->
           <td>
             <div class="student-col">
-              <div class="student-avatar">${initials}</div>
+              <div class="student-avatar">${getInitials(req.studentName)}</div>
               <div class="student-info">
                 <span class="student-name-text">${req.studentName}</span>
                 <span class="student-meta-sub">${req.studentId} • ${req.department ? req.department.split(' ')[0] : 'Engg'}</span>
               </div>
             </div>
           </td>
-
-          <!-- Room & Block -->
           <td>
             <div class="room-col">
               <span class="room-no">Room ${req.roomNumber}</span>
               <span class="block-name">${req.hostelBlock}</span>
             </div>
           </td>
-
-          <!-- Destination & Purpose -->
           <td>
             <div class="dest-col">
               <div class="dest-place">${req.destination}</div>
               <div class="dest-reason" title="${req.reason}">${req.reason}</div>
             </div>
           </td>
-
-          <!-- Departure & Return Window -->
           <td>
             <div class="time-col">
-              <div class="time-row">
-                <span class="time-lbl">OUT:</span>
-                <span>${formatDateTime(req.departureTime)}</span>
-              </div>
-              <div class="time-row">
-                <span class="time-lbl">IN:</span>
-                <span class="bold">${formatDateTime(req.expectedReturnTime)}</span>
-              </div>
-              <div class="time-duration-chip">⏱ ${duration} duration</div>
+              <div class="time-row"><span class="time-lbl">OUT:</span><span>${formatDateTime(req.departureTime)}</span></div>
+              <div class="time-row"><span class="time-lbl">IN:</span><span class="bold">${formatDateTime(req.expectedReturnTime)}</span></div>
+              <div class="time-duration-chip">⏱ ${duration}</div>
             </div>
           </td>
-
-          <!-- Parent Contact & Consent -->
           <td>
             <div class="parent-col">
               <span class="parent-name-text">${req.parentName}</span>
-              <a href="tel:${req.parentPhone}" class="parent-phone-link" title="Call parent to verify">
-                📞 ${req.parentPhone}
-              </a>
+              <a href="tel:${req.parentPhone}" class="parent-phone-link">📞 ${req.parentPhone}</a>
               ${parentConsentBadge}
             </div>
           </td>
-
-          <!-- Decision / Action Buttons -->
           <td>
             <div class="action-btn-group">
               ${req.status === "PENDING" ? `
-                <button class="btn btn-sm btn-primary btn-review" data-id="${req.id}" title="Inspect full profile & review">
-                  <span>Review & Verify</span>
-                </button>
+                <button class="btn btn-sm btn-primary btn-review" data-id="${req.id}"><span>Review & Verify</span></button>
                 <button class="btn-action-icon approve btn-quick-approve" data-id="${req.id}" title="Quick Approve">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </button>
@@ -448,15 +558,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 </button>
               ` : `
                 ${getStatusBadge(req.status)}
+                <button class="btn btn-sm btn-outline btn-audit-history" data-id="${req.id}" title="View Audit History">
+                  📜 History
+                </button>
                 ${req.status === "APPROVED" ? `
-                  <button class="btn btn-sm btn-outline btn-view-pass" data-id="${req.id}" title="View Gate Pass">
-                    🎟 View Pass
-                  </button>
-                ` : `
-                  <button class="btn btn-sm btn-outline btn-review" data-id="${req.id}" title="View Details">
-                    Details
-                  </button>
-                `}
+                  <button class="btn btn-sm btn-outline btn-view-pass" data-id="${req.id}">🎟 Pass</button>
+                ` : ""}
               `}
             </div>
           </td>
@@ -464,196 +571,289 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
     }).join("");
 
-    attachTableEventListeners();
+    attachWardenRowEvents();
   }
 
-  // ==========================================
-  // Table Row Action Handlers
-  // ==========================================
-  function attachTableEventListeners() {
-    // Review button
+  function attachWardenRowEvents() {
     document.querySelectorAll(".btn-review").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-id");
-        openReviewModal(id);
-      });
+      btn.addEventListener("click", () => openReviewModal(btn.getAttribute("data-id")));
     });
 
-    // Quick Approve
     document.querySelectorAll(".btn-quick-approve").forEach(btn => {
       btn.addEventListener("click", () => {
         const id = btn.getAttribute("data-id");
-        if (confirm(`Are you sure you want to approve outpass ${id}?`)) {
-          updateOutpassStatus(id, "APPROVED", "Approved via Quick Action. Comply with hostel reporting hours.");
+        if (confirm(`Approve outpass ${id}?`)) {
+          executeWardenDecision(id, "APPROVE", "Quick approve by warden.");
         }
       });
     });
 
-    // Quick Reject
     document.querySelectorAll(".btn-quick-reject").forEach(btn => {
+      btn.addEventListener("click", () => openReviewModal(btn.getAttribute("data-id"), true));
+    });
+
+    document.querySelectorAll(".btn-view-pass").forEach(btn => {
       btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-id");
-        openReviewModal(id, true); // Opens modal with focus on rejection
+        const record = state.requests.find(r => r.id === btn.getAttribute("data-id"));
+        if (record) openPassModal(record);
       });
     });
 
-    // View Gate Pass
-    document.querySelectorAll(".btn-view-pass").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-id");
-        const record = state.requests.find(r => r.id === id);
-        if (record) openPassModal(record);
-      });
+    document.querySelectorAll(".btn-audit-history").forEach(btn => {
+      btn.addEventListener("click", () => openHistoryModal(btn.getAttribute("data-id")));
     });
   }
 
   // ==========================================
-  // Detailed Review Modal
+  // WARDEN: Execute Approval/Rejection ([BE-001])
   // ==========================================
-  function openReviewModal(requestId, focusReject = false) {
-    const req = state.requests.find(r => r.id === requestId);
-    if (!req) return;
+  async function executeWardenDecision(id, action, remarks, rejectionReason) {
+    try {
+      const endpoint = action === "APPROVE" ? `/api/outpasses/${id}/approve` : `/api/outpasses/${id}/reject`;
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": currentUser.id,
+          "x-user-role": currentUser.role,
+          "x-user-name": currentUser.name
+        },
+        body: JSON.stringify({ remarks, rejectionReason })
+      });
 
+      const json = await res.json();
+      if (json.success) {
+        showToast(json.message, "success");
+        if (el.reviewModal.open) el.reviewModal.close();
+        await fetchStats();
+        await fetchWardenRequests();
+        if (action === "APPROVE") {
+          openPassModal(json.data.outpass);
+        }
+      } else {
+        showToast(json.error || "Action failed", "error");
+      }
+    } catch (err) {
+      showToast("Network error executing decision", "error");
+    }
+  }
+
+  function openReviewModal(id, focusReject = false) {
+    const req = state.requests.find(r => r.id === id);
+    if (!req) return;
     state.selectedRequest = req;
 
-    // Header badges
     el.modalRequestId.textContent = req.id;
     el.modalTypeBadge.textContent = req.outpassType.replace("_", " ");
     el.modalStatusBadge.textContent = req.status;
-
-    // Student Info
     el.modalAvatar.textContent = getInitials(req.studentName);
     el.modalStudentName.textContent = req.studentName;
     el.modalRollNo.textContent = `Roll: ${req.studentId}`;
-    el.modalDept.textContent = `${req.department} • ${req.year}`;
+    el.modalDept.textContent = req.department || "Engineering";
     el.modalBlockRoom.textContent = `${req.hostelBlock} • Room ${req.roomNumber}`;
     el.modalPhone.textContent = `📞 ${req.studentPhone}`;
 
-    // History & Discipline
     const hist = req.studentHistory || {};
-    el.modalHistPasses.textContent = hist.totalOutpassesThisSem ?? "1";
-    el.modalHistAttendance.textContent = hist.attendance ?? "92%";
-    el.modalHistCgpa.textContent = hist.cgpa ?? "8.50";
+    el.modalHistPasses.textContent = hist.totalOutpassesThisSem ?? "2";
+    el.modalHistAttendance.textContent = hist.attendance ?? "94%";
+    el.modalHistCgpa.textContent = hist.cgpa ?? "8.80";
     el.modalHistOverstays.textContent = hist.overstays ?? "0";
 
-    // Schedule
     el.modalDestination.textContent = req.destination;
     el.modalDepTime.textContent = formatDateTime(req.departureTime);
     el.modalRetTime.textContent = formatDateTime(req.expectedReturnTime);
     el.modalDuration.textContent = calculateDuration(req.departureTime, req.expectedReturnTime);
     el.modalReason.textContent = req.reason;
 
-    // Parent Section
     el.modalParentName.textContent = req.parentName;
     el.modalParentPhone.textContent = req.parentPhone;
     el.btnCallParent.href = `tel:${req.parentPhone}`;
 
-    updateConsentUI(req.parentConsent);
-
-    // Remarks reset
     el.wardenRemarksInput.value = req.wardenRemarks || "";
-
-    // Show modal using native showModal()
     el.reviewModal.showModal();
 
     if (focusReject) {
       el.wardenRemarksInput.focus();
-      el.wardenRemarksInput.placeholder = "Please select or type the specific reason for rejecting this outpass...";
+      el.wardenRemarksInput.placeholder = "Specify reason for rejecting this outpass...";
     }
   }
 
-  function updateConsentUI(consent) {
-    if (consent === "VERIFIED" || consent === "CONFIRMED_VIA_SMS") {
-      el.modalConsentBanner.style.backgroundColor = "var(--success-light)";
-      el.modalConsentBanner.style.color = "#065f46";
-      el.modalConsentText.textContent = "✔ Parent / guardian consent confirmed & logged in audit record.";
-      el.btnToggleConsent.textContent = "Reset Consent Status";
-    } else {
-      el.modalConsentBanner.style.backgroundColor = "var(--warning-light)";
-      el.modalConsentBanner.style.color = "#b45309";
-      el.modalConsentText.textContent = "⚠️ Parent consent pending verification. Please call guardian before approving.";
-      el.btnToggleConsent.textContent = "✔ Mark Consent Confirmed";
-    }
-  }
-
-  // Toggle Consent Status
-  el.btnToggleConsent.addEventListener("click", () => {
+  el.btnApproveOutpass.addEventListener("click", () => {
     if (!state.selectedRequest) return;
-    const isCurrentlyVerified = state.selectedRequest.parentConsent === "VERIFIED";
-    state.selectedRequest.parentConsent = isCurrentlyVerified ? "PENDING_CALL" : "VERIFIED";
-    updateConsentUI(state.selectedRequest.parentConsent);
-    showToast(
-      isCurrentlyVerified
-        ? "Parent consent status marked as Pending Verification"
-        : "Parent consent marked as Confirmed!",
-      "info"
-    );
+    const remarks = el.wardenRemarksInput.value.trim() || "Approved by warden.";
+    executeWardenDecision(state.selectedRequest.id, "APPROVE", remarks);
   });
 
-  // Rejection Preset Buttons
+  el.btnRejectOutpass.addEventListener("click", () => {
+    if (!state.selectedRequest) return;
+    const reason = el.wardenRemarksInput.value.trim();
+    if (!reason) {
+      alert("A specific rejection reason is mandatory when rejecting an outpass.");
+      el.wardenRemarksInput.focus();
+      return;
+    }
+    executeWardenDecision(state.selectedRequest.id, "REJECT", reason, reason);
+  });
+
   el.rejectionPresets.forEach(btn => {
     btn.addEventListener("click", () => {
-      const reason = btn.getAttribute("data-reason");
-      el.wardenRemarksInput.value = reason;
+      el.wardenRemarksInput.value = btn.getAttribute("data-reason");
       el.wardenRemarksInput.focus();
     });
   });
 
-  // Approve in Modal
-  el.btnApproveOutpass.addEventListener("click", () => {
-    if (!state.selectedRequest) return;
-    const remarks = el.wardenRemarksInput.value.trim() || "Approved by Chief Warden. Follow campus security rules.";
-    updateOutpassStatus(state.selectedRequest.id, "APPROVED", remarks);
-  });
-
-  // Reject in Modal
-  el.btnRejectOutpass.addEventListener("click", () => {
-    if (!state.selectedRequest) return;
-    const remarks = el.wardenRemarksInput.value.trim();
-    if (!remarks) {
-      alert("Please provide a reason or select a preset for rejecting this outpass request.");
-      el.wardenRemarksInput.focus();
-      return;
-    }
-    updateOutpassStatus(state.selectedRequest.id, "REJECTED", remarks);
-  });
-
-  // Close Review Modal
   el.btnCloseReviewModal.addEventListener("click", () => el.reviewModal.close());
   el.btnCancelModal.addEventListener("click", () => el.reviewModal.close());
 
   // ==========================================
-  // Digital Gate Outpass Modal
+  // STUDENT PORTAL: Setup & Outpass Tracking
   // ==========================================
-  function openPassModal(record) {
-    el.passTokenCode.textContent = record.gatePassToken || "EOP-SEC-8921";
-    el.passStudentName.textContent = record.studentName;
-    el.passRollNo.textContent = record.studentId;
-    el.passHostelRoom.textContent = `${record.hostelBlock} • Room ${record.roomNumber}`;
-    el.passDestination.textContent = record.destination;
-    el.passDepWindow.textContent = formatDateTime(record.departureTime);
-    el.passRetWindow.textContent = formatDateTime(record.expectedReturnTime);
-    el.passRemarks.textContent = record.wardenRemarks || "Approved. Return safely before gate closing.";
-    el.passWarden.textContent = record.reviewedBy || "Chief Warden Dr. R. Sundaram";
-    el.passTimestamp.textContent = `Authorized: ${formatDateTime(record.reviewedAt || record.updatedAt)}`;
+  function setupStudentPortal() {
+    el.studentCardName.textContent = currentUser.name;
+    el.studentCardRoll.textContent = `Roll: ${currentUser.id}`;
+    el.studentCardDept.textContent = currentUser.department || "Information Technology";
+    el.studentCardRoom.textContent = `${currentUser.hostel_block || 'Block A'} • Room ${currentUser.room_number || 'A-304'}`;
+    el.studentCardAvatar.textContent = getInitials(currentUser.name);
 
-    el.passModal.showModal();
+    fetchStudentRequests();
   }
 
-  el.btnClosePassModal.addEventListener("click", () => el.passModal.close());
-  el.btnClosePassModalBtn.addEventListener("click", () => el.passModal.close());
-  el.btnPrintPass.addEventListener("click", () => window.print());
+  async function fetchStudentRequests() {
+    try {
+      const res = await fetch("/api/outpasses");
+      const json = await res.json();
+      if (json.success) {
+        // Filter outpasses belonging specifically to the logged-in student
+        const myRequests = json.data.filter(r => r.studentId.toUpperCase() === currentUser.id.toUpperCase());
+        state.studentRequests = myRequests;
+        renderStudentTable(myRequests);
+      }
+    } catch (err) {
+      console.error("Failed to load student requests:", err);
+    }
+  }
+
+  function renderStudentTable(records) {
+    if (!records || records.length === 0) {
+      el.studentTableBody.innerHTML = "";
+      el.studentEmptyState.classList.remove("hidden");
+      el.studentTable.classList.add("hidden");
+      return;
+    }
+
+    el.studentEmptyState.classList.add("hidden");
+    el.studentTable.classList.remove("hidden");
+
+    el.studentTableBody.innerHTML = records.map(req => {
+      return `
+        <tr>
+          <td>
+            <div class="req-id-col">
+              <span class="req-id">${req.id}</span>
+              ${getTypeBadge(req.outpassType)}
+            </div>
+          </td>
+          <td>
+            <div class="dest-col">
+              <div class="dest-place">${req.destination}</div>
+              <div class="dest-reason">${req.reason}</div>
+            </div>
+          </td>
+          <td>${formatDateTime(req.departureTime)}</td>
+          <td>${formatDateTime(req.expectedReturnTime)}</td>
+          <td>${getStatusBadge(req.status)}</td>
+          <td class="text-right">
+            <div class="action-btn-group">
+              <button class="btn btn-sm btn-outline btn-view-history" data-id="${req.id}">
+                📜 View History
+              </button>
+              ${req.status === "APPROVED" ? `
+                <button class="btn btn-sm btn-primary btn-view-pass" data-id="${req.id}">
+                  🎟 Gate Pass
+                </button>
+              ` : ""}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    document.querySelectorAll(".btn-view-history").forEach(btn => {
+      btn.addEventListener("click", () => openHistoryModal(btn.getAttribute("data-id")));
+    });
+
+    document.querySelectorAll(".btn-view-pass").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const pass = state.studentRequests.find(r => r.id === btn.getAttribute("data-id"));
+        if (pass) openPassModal(pass);
+      });
+    });
+  }
 
   // ==========================================
-  // Student Request Simulator Modal
+  // MODULE 1: Status History Modal ([DB-001])
   // ==========================================
-  el.btnOpenSimulator.addEventListener("click", () => {
-    // Populate sensible default departure and return times
+  async function openHistoryModal(outpassId) {
+    try {
+      const res = await fetch(`/api/outpasses/${outpassId}/history`);
+      const json = await res.json();
+
+      if (!json.success || !json.data || !json.data.history) {
+        alert("Failed to load status history for this outpass.");
+        return;
+      }
+
+      const history = json.data.history;
+      if (history.length === 0) {
+        el.historyTimelineList.innerHTML = `<p class="text-center">No status changes recorded yet for this outpass.</p>`;
+      } else {
+        el.historyTimelineList.innerHTML = history.map((h, index) => {
+          const dotClass = h.new_status === "APPROVED" ? "approved" : h.new_status === "REJECTED" ? "rejected" : "pending";
+          return `
+            <div class="timeline-item">
+              <div class="timeline-dot ${dotClass}">#${index + 1}</div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  <span class="timeline-transition">${h.previous_status} ➔ ${h.new_status}</span>
+                  <span class="timeline-time">${formatDateTime(h.changed_at)}</span>
+                </div>
+                <div class="timeline-actor">
+                  Changed by: <strong>${h.changed_by_name || h.changed_by}</strong> (${h.changed_by_role})
+                </div>
+                ${h.remarks || h.rejection_reason ? `
+                  <div class="timeline-remarks">
+                    💬 "${h.remarks || h.rejection_reason}"
+                  </div>
+                ` : ""}
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      el.statusHistoryModal.showModal();
+    } catch (err) {
+      alert("Error fetching status history from database.");
+    }
+  }
+
+  el.btnCloseHistModal.addEventListener("click", () => el.statusHistoryModal.close());
+  el.btnCloseHistBtn.addEventListener("click", () => el.statusHistoryModal.close());
+
+  // ==========================================
+  // Student Apply Outpass Modal
+  // ==========================================
+  el.btnStudentApplyPass.addEventListener("click", () => {
+    el.simRollNo.value = currentUser.id;
+    el.simStudentName.value = currentUser.name;
+    el.simDepartment.value = currentUser.department || "Information Technology";
+    el.simHostelBlock.value = currentUser.hostel_block || "Block A (Boys)";
+    el.simRoomNo.value = currentUser.room_number || "A-304";
+    el.simParentPhone.value = currentUser.phone || "+91 94432 10987";
+
     const now = new Date();
-    const dep = new Date(now.getTime() + 1.5 * 3600 * 1000); // 1.5 hours from now
-    const ret = new Date(now.getTime() + 6 * 3600 * 1000); // 6 hours from now
-
-    // Format for datetime-local (YYYY-MM-DDTHH:mm)
+    const dep = new Date(now.getTime() + 2 * 3600 * 1000);
+    const ret = new Date(now.getTime() + 24 * 3600 * 1000);
     const toIsoLocal = (d) => {
       const offset = d.getTimezoneOffset() * 60000;
       return new Date(d.getTime() - offset).toISOString().slice(0, 16);
@@ -661,6 +861,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     el.simDepTime.value = toIsoLocal(dep);
     el.simRetTime.value = toIsoLocal(ret);
+    el.simDestination.value = "";
+    el.simReason.value = "";
 
     el.simulatorModal.showModal();
   });
@@ -672,18 +874,18 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
 
     const payload = {
-      studentId: document.getElementById("simRollNo").value.trim(),
-      studentName: document.getElementById("simStudentName").value.trim(),
-      department: document.getElementById("simDepartment").value.trim(),
-      hostelBlock: document.getElementById("simHostelBlock").value,
-      roomNumber: document.getElementById("simRoomNo").value.trim(),
-      outpassType: document.getElementById("simOutpassType").value,
-      destination: document.getElementById("simDestination").value.trim(),
+      studentId: el.simRollNo.value,
+      studentName: el.simStudentName.value,
+      department: el.simDepartment.value,
+      hostelBlock: el.simHostelBlock.value,
+      roomNumber: el.simRoomNo.value,
+      outpassType: el.simOutpassType.value,
+      destination: el.simDestination.value.trim(),
       departureTime: new Date(el.simDepTime.value).toISOString(),
       expectedReturnTime: new Date(el.simRetTime.value).toISOString(),
-      reason: document.getElementById("simReason").value.trim(),
-      parentName: document.getElementById("simParentName").value.trim(),
-      parentPhone: document.getElementById("simParentPhone").value.trim(),
+      reason: el.simReason.value.trim(),
+      parentName: el.simParentName.value.trim(),
+      parentPhone: el.simParentPhone.value.trim(),
       parentConsent: "PENDING_CALL"
     };
 
@@ -696,38 +898,46 @@ document.addEventListener("DOMContentLoaded", () => {
       const json = await res.json();
 
       if (json.success) {
-        showToast(`Request submitted! Outpass ID: ${json.data.id}`, "success");
+        showToast(`Outpass request submitted! ID: ${json.data.id}`, "success");
         el.simulatorModal.close();
-
-        // Switch to Pending view and reload
-        state.currentView = "PENDING";
-        updateTabStyles();
-        await fetchStats();
-        await fetchRequests();
+        fetchStudentRequests();
       } else {
-        alert(json.error || "Failed to submit student request");
+        alert(json.error || "Failed to submit request.");
       }
     } catch (err) {
-      alert("Error submitting request to server");
+      alert("Error submitting request to server.");
     }
   });
 
-  // ==========================================
-  // Filter & Search Event Listeners
-  // ==========================================
-  let debounceTimeout = null;
+  // Digital Gate Pass Modal
+  function openPassModal(record) {
+    el.passTokenCode.textContent = record.gatePassToken || "EOP-SEC-8921";
+    el.passStudentName.textContent = record.studentName;
+    el.passRollNo.textContent = record.studentId;
+    el.passHostelRoom.textContent = `${record.hostelBlock} • Room ${record.roomNumber}`;
+    el.passDestination.textContent = record.destination;
+    el.passDepWindow.textContent = formatDateTime(record.departureTime);
+    el.passRetWindow.textContent = formatDateTime(record.expectedReturnTime);
+    el.passRemarks.textContent = record.wardenRemarks || "Approved. Return before curfew.";
+    el.passWarden.textContent = record.reviewedBy || "Chief Warden Dr. R. Sundaram";
+    el.passTimestamp.textContent = `Authorized: ${formatDateTime(record.reviewedAt || record.updatedAt)}`;
+
+    el.passModal.showModal();
+  }
+
+  el.btnClosePassModal.addEventListener("click", () => el.passModal.close());
+  el.btnClosePassModalBtn.addEventListener("click", () => el.passModal.close());
+  el.btnPrintPass.addEventListener("click", () => window.print());
+
+  // Search and Filter Listeners for Warden View
+  let searchTimer = null;
   el.searchInput.addEventListener("input", (e) => {
     const val = e.target.value;
-    if (val.length > 0) {
-      el.btnClearSearch.classList.remove("hidden");
-    } else {
-      el.btnClearSearch.classList.add("hidden");
-    }
-
-    clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(() => {
+    el.btnClearSearch.classList.toggle("hidden", val.length === 0);
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
       state.searchQuery = val;
-      fetchRequests();
+      fetchWardenRequests();
     }, 250);
   });
 
@@ -735,81 +945,39 @@ document.addEventListener("DOMContentLoaded", () => {
     el.searchInput.value = "";
     el.btnClearSearch.classList.add("hidden");
     state.searchQuery = "";
-    fetchRequests();
+    fetchWardenRequests();
   });
 
   el.blockFilter.addEventListener("change", (e) => {
     state.filterBlock = e.target.value;
-    fetchRequests();
+    fetchWardenRequests();
   });
 
   el.typeFilter.addEventListener("change", (e) => {
     state.filterType = e.target.value;
-    fetchRequests();
+    fetchWardenRequests();
   });
 
   el.btnRefresh.addEventListener("click", () => {
     fetchStats();
-    fetchRequests();
-    showToast("Dashboard refreshed", "info");
+    fetchWardenRequests();
+    showToast("Warden queue refreshed", "info");
   });
-
-  el.btnResetSeed.addEventListener("click", async () => {
-    if (confirm("Reset outpass records back to initial college seed data?")) {
-      try {
-        const res = await fetch("/api/reset-seed", { method: "POST" });
-        const json = await res.json();
-        if (json.success) {
-          showToast(json.message, "success");
-          fetchStats();
-          fetchRequests();
-        }
-      } catch (err) {
-        showToast("Failed to reset database", "error");
-      }
-    }
-  });
-
-  el.btnEmptyReset.addEventListener("click", () => {
-    el.searchInput.value = "";
-    el.btnClearSearch.classList.add("hidden");
-    state.searchQuery = "";
-    state.filterBlock = "ALL";
-    state.filterType = "ALL";
-    el.blockFilter.value = "ALL";
-    el.typeFilter.value = "ALL";
-    fetchRequests();
-  });
-
-  // Tabs (Pending Queue vs All History)
-  function updateTabStyles() {
-    if (state.currentView === "PENDING") {
-      el.tabPending.classList.add("active");
-      el.tabAll.classList.remove("active");
-    } else {
-      el.tabAll.classList.add("active");
-      el.tabPending.classList.remove("active");
-    }
-  }
 
   el.tabPending.addEventListener("click", () => {
     state.currentView = "PENDING";
-    updateTabStyles();
-    fetchRequests();
+    el.tabPending.classList.add("active");
+    el.tabAll.classList.remove("active");
+    fetchWardenRequests();
   });
 
   el.tabAll.addEventListener("click", () => {
     state.currentView = "ALL";
-    updateTabStyles();
-    fetchRequests();
+    el.tabAll.classList.add("active");
+    el.tabPending.classList.remove("active");
+    fetchWardenRequests();
   });
 
-  // ==========================================
-  // Initialize Dashboard
-  // ==========================================
-  fetchStats();
-  fetchRequests();
-
-  // Auto-refresh stats every 30 seconds
-  setInterval(fetchStats, 30000);
+  // Initialize
+  checkAuthState();
 });

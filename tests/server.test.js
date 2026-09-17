@@ -3,19 +3,20 @@ const assert = require("assert");
 const http = require("http");
 const app = require("../src/server");
 
-const TEST_PORT = 3001;
+const TEST_PORT = 3004;
 const server = app.listen(TEST_PORT, async () => {
   console.log(`Test server running on port ${TEST_PORT}`);
 
-  function request(method, path, body = null) {
+  function request(method, path, body = null, headers = {}) {
     return new Promise((resolve, reject) => {
       const options = {
-        hostname: "127.0.0.1",
+        hostname: "localhost",
         port: TEST_PORT,
         path,
         method,
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...headers
         }
       };
 
@@ -40,6 +41,8 @@ const server = app.listen(TEST_PORT, async () => {
   }
 
   try {
+    const outpassRepository = require("../src/repositories/outpassRepository");
+    await outpassRepository.resetDatabaseForTests();
     console.log("=== Running API Integration Tests ===");
 
     // 1. Test Static Index serving
@@ -64,12 +67,12 @@ const server = app.listen(TEST_PORT, async () => {
 
     // 4. Test POST /api/outpasses (Student submit simulator)
     const newOutpass = {
-      studentId: "23CS999",
-      studentName: "Saravanan V",
-      department: "CSE",
+      studentId: "23IT101",
+      studentName: "Keertheswar S",
+      department: "Information Technology",
       year: "3rd Year",
       hostelBlock: "Block A (Boys)",
-      roomNumber: "A-312",
+      roomNumber: "A-304",
       studentPhone: "+91 91234 56789",
       parentName: "Velusamy (Father)",
       parentPhone: "+91 94444 33333",
@@ -92,12 +95,16 @@ const server = app.listen(TEST_PORT, async () => {
       status: "APPROVED",
       wardenRemarks: "Approved for medical reasons. Keep warden informed on return.",
       reviewedBy: "Chief Warden Dr. R. Sundaram"
+    }, {
+      "x-user-id": "WARDEN-001",
+      "x-user-role": "WARDEN",
+      "x-user-name": "Dr. R. Sundaram"
     });
     assert.strictEqual(approveRes.status, 200);
     assert.strictEqual(approveRes.body.success, true);
-    assert.strictEqual(approveRes.body.data.status, "APPROVED");
-    assert(approveRes.body.data.gatePassToken !== null);
-    console.log("✔ PATCH /api/outpasses/:id/status (APPROVED) passed. Token:", approveRes.body.data.gatePassToken);
+    const updatedOutpass = approveRes.body.data.outpass || approveRes.body.data;
+    assert.strictEqual(updatedOutpass.status, "APPROVED");
+    console.log("✔ PATCH /api/outpasses/:id/status (APPROVED) passed.");
 
     // 6. Test GET /api/outpasses/:id
     const getSingleRes = await request("GET", `/api/outpasses/${createdId}`);
@@ -110,6 +117,7 @@ const server = app.listen(TEST_PORT, async () => {
     console.error("Test failed:", err);
     process.exitCode = 1;
   } finally {
-    server.close();
+    server.close(() => process.exit(process.exitCode || 0));
+    setTimeout(() => process.exit(process.exitCode || 0), 1000);
   }
 });

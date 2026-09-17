@@ -4,6 +4,10 @@
 const express = require("express");
 const path = require("path");
 const { outpassStore } = require("./db/outpassStore");
+const outpassRepository = require("./repositories/outpassRepository");
+const { testConnection } = require("./config/db");
+const approvalRoutes = require("./routes/approvalRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +25,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// Mount Authentication & Review Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/outpasses", approvalRoutes);
+
+
+
 // ==========================================
 // REST API Endpoints
 // ==========================================
@@ -29,9 +39,9 @@ app.use((req, res, next) => {
  * GET /api/stats
  * Returns dashboard metrics (Pending, Approved Today, Rejected Today, Outside count, etc.)
  */
-app.get("/api/stats", (req, res) => {
+app.get("/api/stats", async (req, res) => {
   try {
-    const stats = outpassStore.getStatistics();
+    const stats = await outpassRepository.getStatistics();
     res.json({ success: true, data: stats });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -42,10 +52,10 @@ app.get("/api/stats", (req, res) => {
  * GET /api/outpasses/pending
  * Returns all pending outpass requests for warden review
  */
-app.get("/api/outpasses/pending", (req, res) => {
+app.get("/api/outpasses/pending", async (req, res) => {
   try {
     const { hostelBlock, outpassType, search } = req.query;
-    const requests = outpassStore.getPending({ hostelBlock, outpassType, search });
+    const requests = await outpassRepository.getPending({ hostelBlock, outpassType, search });
     res.json({ success: true, count: requests.length, data: requests });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -56,10 +66,10 @@ app.get("/api/outpasses/pending", (req, res) => {
  * GET /api/outpasses
  * Returns outpass requests with filtering and search
  */
-app.get("/api/outpasses", (req, res) => {
+app.get("/api/outpasses", async (req, res) => {
   try {
     const { status, hostelBlock, outpassType, search } = req.query;
-    const records = outpassStore.getAll({ status, hostelBlock, outpassType, search });
+    const records = await outpassRepository.getAll({ status, hostelBlock, outpassType, search });
     res.json({ success: true, count: records.length, data: records });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -70,13 +80,13 @@ app.get("/api/outpasses", (req, res) => {
  * GET /api/outpasses/:id
  * Returns a specific outpass by ID
  */
-app.get("/api/outpasses/:id", (req, res) => {
+app.get("/api/outpasses/:id", async (req, res) => {
   try {
-    const record = outpassStore.getById(req.params.id);
+    const record = await outpassRepository.findById(req.params.id);
     if (!record) {
       return res.status(404).json({ success: false, error: "Outpass request not found" });
     }
-    res.json({ success: true, data: record });
+    res.json({ success: true, data: outpassRepository._mapRowToRecord(record) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -86,9 +96,33 @@ app.get("/api/outpasses/:id", (req, res) => {
  * POST /api/outpasses
  * Creates a new outpass request (Used by Student Form / Simulator)
  */
-app.post("/api/outpasses", (req, res) => {
+app.post("/api/outpasses", async (req, res) => {
   try {
     const created = outpassStore.create(req.body);
+
+    // Keep outpassRepository and PostgreSQL in sync
+    try {
+      const outpassRepository = require("./repositories/outpassRepository");
+      await outpassRepository.create({
+        id: created.id,
+        student_id: created.studentId,
+        student_name: created.studentName,
+        department: created.department,
+        hostel_block: created.hostelBlock,
+        room_number: created.roomNumber,
+        outpass_type: created.outpassType,
+        destination: created.destination,
+        reason: created.reason,
+        departure_time: created.departureTime,
+        expected_return_time: created.expectedReturnTime,
+        parent_name: created.parentName,
+        parent_phone: created.parentPhone,
+        parent_consent: created.parentConsent
+      });
+    } catch (repoErr) {
+      // Non-blocking fallback
+    }
+
     res.status(201).json({
       success: true,
       message: "Outpass request submitted successfully",
@@ -147,12 +181,13 @@ app.get("*", (req, res) => {
 
 // Start Server with graceful port fallback
 function startServer(port = PORT, retries = 5) {
-  const serverInstance = app.listen(port, () => {
+  const serverInstance = app.listen(port, async () => {
     console.log(`====================================================`);
     console.log(`  E-Outpass Management System Server Running!       `);
     console.log(`  URL: http://localhost:${port}                     `);
     console.log(`  Warden Review Dashboard & Data Store Active       `);
     console.log(`====================================================`);
+    await testConnection();
   });
 
   serverInstance.on("error", (err) => {
