@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Outpass Management & Gate Verification System</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <!-- QR code generator library for SVG rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <!-- HTML5 QR Code scanner library for camera scanning -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+
+
+<body>
+
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo-area">
+                <span class="logo-icon">🎫</span>
+                <h1>E-Outpass Management</h1>
+            </div>
+            
+            <nav class="portal-nav">
+                <button class="nav-tab active" data-tab="student-portal">🎓 Student Portal</button>
+                <button class="nav-tab" data-tab="warden-portal">👨‍⚖️ Warden Review</button>
+                <button class="nav-tab" data-tab="gate-portal">🛡️ Gate Verification</button>
+            </nav>
+
+            <div class="notif-badge-area" id="notif-bell" title="Student Notifications">
+                🔔 <span class="notif-count" id="notif-count">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Notification Dropdown Modal -->
+    <div id="notif-modal" class="notif-modal hidden">
+        <h3>Notifications</h3>
+        <div id="notif-list" class="notif-list">No notifications yet.</div>
+    </div>
+
+    <div class="container">
+
+        <!-- STUDENT PORTAL -->
+        <main id="student-portal" class="tab-content active">
+
+            <div class="portal-banner">
+                <div>
+                    <h2>Student Dashboard</h2>
+                    <p class="subtitle">Submit new outpass requests, check real-time status, and present your QR code at the gate</p>
+                </div>
+                <button id="refresh-button" class="btn btn-secondary">🔄 Refresh Status</button>
+            </div>
+
+            <div class="grid-layout">
+                <!-- Request Form Card -->
+                <div class="card form-card">
+                    <h3>📝 Submit New Outpass Request</h3>
+                    <form id="outpass-form">
+                        <div class="form-group">
+                            <label for="destination">Destination *</label>
+                            <input type="text" id="destination" placeholder="e.g. Cuddalore / Home" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reason">Reason for Outpass *</label>
+                            <textarea id="reason" placeholder="e.g. Home visit for weekend / Family function" rows="2" required></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="departure_datetime">Departure Date & Time *</label>
+                                <input type="datetime-local" id="departure_datetime" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="return_datetime">Return Date & Time *</label>
+                                <input type="datetime-local" id="return_datetime" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="parent_contact">Parent Contact Number *</label>
+                            <input type="tel" id="parent_contact" placeholder="e.g. 9876543210" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block">🚀 Submit Outpass Request</button>
+                        <div id="form-msg" class="msg-box"></div>
+                    </form>
+                </div>
+
+                <!-- Current Outpass Status & QR Card -->
+                <div class="card status-card">
+                    <h3>📌 Active Outpass Status</h3>
+                    <div id="current-outpass">
+                        Loading outpass details...
+                    </div>
+                    
+                    <div id="qr-container" class="qr-container hidden">
+                        <h4>📱 Gate Entry/Exit QR Code</h4>
+                        <p class="qr-hint">Show this QR code to the gate security guard upon departure/return</p>
+                        <div id="qr-code-display" class="qr-code-box"></div>
+                        <p class="qr-token-text">Token: <code id="qr-token-val"></code></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Outpass History Section -->
+            <section class="card history-section">
+                <div class="history-header">
+                    <h2>📜 Outpass History</h2>
+                    
+                    <div class="filter-controls">
+                        <div>
+                            <label for="status-filter">Status:</label>
+                            <select id="status-filter">
+                                <option value="ALL">All</option>
+                                <option value="APPROVED">Approved</option>
+                                <option value="REJECTED">Rejected</option>
+                                <option value="COMPLETED">Completed</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="search-history">Search:</label>
+                            <input type="text" id="search-history" placeholder="Search destination or reason">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="history-container">
+                    Loading history...
+                </div>
+            </section>
+
+        </main>
+
+        <!-- WARDEN PORTAL -->
+        <main id="warden-portal" class="tab-content">
+            <div class="portal-banner">
+                <div>
+                    <h2>👨‍⚖️ Warden Review Portal</h2>
+                    <p class="subtitle">Review pending outpass applications, approve or reject requests with remarks</p>
+                </div>
+                <button id="warden-refresh-btn" class="btn btn-secondary">🔄 Refresh Requests</button>
+            </div>
+
+            <div class="card">
+                <h3>📋 Pending Outpass Applications</h3>
+                <div id="warden-pending-container">
+                    Loading pending applications...
+                </div>
+            </div>
+        </main>
+
+        <!-- GATE VERIFICATION PORTAL -->
+        <main id="gate-portal" class="tab-content">
+            <div class="portal-banner">
+                <div>
+                    <h2>🛡️ Gate Verification Terminal</h2>
+                    <p class="subtitle">Scan or enter student outpass QR token for instant gate pass validation</p>
+                </div>
+            </div>
+
+            <div class="grid-layout">
+                <div class="card scanner-card">
+                    <h3>📷 Camera & QR Scanner Terminal</h3>
+
+                    <!-- Camera Scanner Container -->
+                    <div class="camera-scanner-section">
+                        <div class="camera-btn-row">
+                            <button id="start-camera-btn" class="btn btn-primary">📷 Start Camera Scanner</button>
+                            <button id="stop-camera-btn" class="btn btn-secondary hidden">⏹️ Stop Camera</button>
+                        </div>
+                        <div id="camera-status" class="camera-status-text">Camera ready. Click "Start Camera Scanner" to scan live QR code.</div>
+                        <div id="reader" class="qr-camera-viewport hidden"></div>
+                    </div>
+
+                    <div class="divider-line"><span>OR ENTER MANUALLY</span></div>
+
+                    <form id="gate-verify-form">
+                        <div class="form-group">
+                            <label for="qr-input">QR Token Code *</label>
+                            <input type="text" id="qr-input" placeholder="Scan or paste token e.g. QR-2024506050-..." required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">⚡ Verify Gate Pass</button>
+                    </form>
+                    
+                    <div class="quick-sample-area">
+                        <p>💡 Quick Action:</p>
+                        <button id="use-active-qr-btn" class="btn btn-small btn-secondary">Paste Active Student QR Token</button>
+                    </div>
+                </div>
+
+
+                <div class="card verification-result-card">
+                    <h3>📊 Verification Status</h3>
+                    <div id="gate-result-container" class="gate-result-idle">
+                        <p class="idle-msg">Enter a QR token to perform gate verification scan.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+    <script src="js/outpass.js"></script>
+
+</body>
+</html>
