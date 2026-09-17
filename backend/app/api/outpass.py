@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Header, HTTPException
 
-from backend.app.db.database import SessionLocal
 from backend.app.repositories.outpass_repository import OutpassRepository
 from backend.app.services.outpass_service import OutpassService
-from backend.app.schemas.outpass_schema import StudentOutpassHistoryResponse
+from backend.app.schemas.outpass_schema import (
+    OutpassCreateRequest,
+    OutpassResponse,
+    StudentOutpassHistoryResponse
+)
 
 
 router = APIRouter(
@@ -13,21 +15,34 @@ router = APIRouter(
 )
 
 
-def get_db():
-    db = SessionLocal()
+def get_repository():
+    from backend.app.db.mongodb import outpasses_collection
 
-    try:
-        yield db
-    finally:
-        db.close()
+    return OutpassRepository()
+
+
+@router.post("", response_model=OutpassResponse, status_code=201)
+def create_outpass(
+    request: OutpassCreateRequest,
+    authorization: str | None = Header(default=None)
+):
+    if not authorization:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required"
+        )
+
+    repository = get_repository()
+    service = OutpassService(repository)
+
+    return service.create_outpass(request.model_dump())
 
 
 @router.get("/my", response_model=StudentOutpassHistoryResponse)
 def get_my_outpasses(
-    student_id: str,
-    db: Session = Depends(get_db)
+    student_id: str
 ):
-    repository = OutpassRepository(db)
+    repository = get_repository()
     service = OutpassService(repository)
 
     current, history = service.get_student_outpasses(student_id)

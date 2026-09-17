@@ -9,3 +9,12 @@ class OutpassRepository:
                 {"student_id": student_id}
             ).sort("request_timestamp", -1)
         )
+
+    def create(self, outpass_data: dict):
+        result = outpasses_collection.insert_one(outpass_data)
+
+        created_outpass = outpasses_collection.find_one(
+            {"_id": result.inserted_id}
+        )
+
+        return created_outpass
