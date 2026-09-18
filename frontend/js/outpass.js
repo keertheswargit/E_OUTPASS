@@ -183,3 +183,73 @@ document.getElementById("refresh-button").addEventListener(
 );
 
 loadOutpasses();
+
+
+
+document.getElementById("outpass-form").addEventListener(
+    "submit",
+    async function (event) {
+
+        event.preventDefault();
+
+        const departure = document.getElementById(
+            "departure_datetime"
+        ).value;
+
+        const returnTime = document.getElementById(
+            "return_datetime"
+        ).value;
+
+        const message = document.getElementById("form-message");
+
+        if (new Date(returnTime) <= new Date(departure)) {
+            message.textContent =
+                "Return time must be after departure time.";
+            return;
+        }
+
+        const requestData = {
+            student_id: studentId,
+            destination: document.getElementById("destination").value,
+            reason: document.getElementById("reason").value,
+            departure_datetime: departure,
+            return_datetime: returnTime,
+            parent_contact: document.getElementById("parent_contact").value
+        };
+
+        try {
+            const response = await fetch(
+                "http://127.0.0.1:8000/api/outpasses",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer test-token"
+                    },
+                    body: JSON.stringify(requestData)
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                message.textContent =
+                    data.detail || "Failed to submit request.";
+                return;
+            }
+
+            message.textContent =
+                "Outpass request submitted successfully! " +
+                "Tracking Reference: " + data.id;
+
+            document.getElementById("outpass-form").reset();
+
+            loadOutpasses();
+
+        } catch (error) {
+            message.textContent =
+                "Unable to connect to the backend.";
+            console.error(error);
+        }
+    }
+);

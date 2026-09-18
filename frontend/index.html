@@ -16,40 +16,70 @@
         <p class="subtitle">View your current outpass status and previous requests</p>
 
         <section>
-    <h2>Current Outpass</h2>
+            <h2>New Outpass Request</h2>
 
-    <button id="refresh-button">Refresh Status</button>
+            <form id="outpass-form" class="card">
 
-    <div id="current-outpass" class="card">
-        Loading...
-    </div>
-</section>
+                <label for="destination">Destination *</label>
+                <input type="text" id="destination" required>
+
+                <label for="reason">Reason *</label>
+                <textarea id="reason" required></textarea>
+
+                <label for="departure_datetime">Departure Date & Time *</label>
+                <input type="datetime-local" id="departure_datetime" required>
+
+                <label for="return_datetime">Return Date & Time *</label>
+                <input type="datetime-local" id="return_datetime" required>
+
+                <label for="parent_contact">Parent Contact *</label>
+                <input type="tel" id="parent_contact" required>
+
+                <button type="submit">Submit Outpass Request</button>
+
+                <p id="form-message"></p>
+
+            </form>
+        </section>
+
 
         <section>
-    <h2>Previous Outpass History</h2>
+            <h2>Current Outpass</h2>
 
-    <label for="status-filter">Filter by Status:</label>
+            <button id="refresh-button">Refresh Status</button>
 
-    <select id="status-filter">
-        <option value="ALL">All</option>
-        <option value="APPROVED">Approved</option>
-        <option value="REJECTED">Rejected</option>
-        <option value="COMPLETED">Completed</option>
-    </select>
-    <br><br>
+            <div id="current-outpass" class="card">
+                Loading...
+            </div>
+        </section>
 
-<label for="search-history">Search:</label>
 
-<input
-    type="text"
-    id="search-history"
-    placeholder="Search destination or reason"
->
+        <section>
+            <h2>Previous Outpass History</h2>
 
-    <div id="history-container">
-        Loading...
-    </div>
-</section>
+            <label for="status-filter">Filter by Status:</label>
+
+            <select id="status-filter">
+                <option value="ALL">All</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="COMPLETED">Completed</option>
+            </select>
+
+            <br><br>
+
+            <label for="search-history">Search:</label>
+
+            <input
+                type="text"
+                id="search-history"
+                placeholder="Search destination or reason"
+            >
+
+            <div id="history-container">
+                Loading...
+            </div>
+        </section>
 
     </div>
 

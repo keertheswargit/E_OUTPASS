@@ -95,3 +95,47 @@ section {
 #refresh-button:hover {
     opacity: 0.85;
 }
+
+
+#outpass-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#outpass-form label {
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+#outpass-form input,
+#outpass-form textarea {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+}
+
+#outpass-form textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+#outpass-form button {
+    margin-top: 10px;
+    padding: 11px 18px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#outpass-form button:hover {
+    opacity: 0.85;
+}
+
+#form-message {
+    font-weight: bold;
+    margin-bottom: 0;
+}
