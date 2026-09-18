@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Outpass Detail</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .card { border: 1px solid #ccc; padding: 20px; width: 300px; border-radius: 8px; }
+        #qr-container { display: none; margin-top: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Outpass Details</h2>
+        <p id="status-text">Loading status...</p>
+        
+        <!-- Hidden by default until Approved -->
+        <div id="qr-container">
+            <h3>Gate Verification Code</h3>
+            <div id="qrcode"></div>
+        </div>
+    </div>
+
+    <script>
+        async function loadOutpass() {
+            const response = await fetch("http://127.0.0.1:5000/api/outpass/test_outpass_001");
+            const data = await response.json();
+
+            document.getElementById("status-text").innerText = "Status: " + data.status;
+
+            if (data.status === "Approved") {
+                document.getElementById("qr-container").style.display = "block";
+                
+                new QRCode(document.getElementById("qrcode"), {
+                    text: data.qr_token,
+                    width: 150,
+                    height: 150
+                });
+            }
+        }
+        loadOutpass();
+    </script>
+</body>
+</html>
