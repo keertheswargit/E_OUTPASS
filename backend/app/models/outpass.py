@@ -1,27 +1,44 @@
 from datetime import datetime
 
+from sqlalchemy import DateTime, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column
 
-class Outpass:
-    def __init__(
-        self,
-        student_id: str,
-        destination: str,
-        reason: str,
-        departure_datetime: datetime,
-        return_datetime: datetime,
-        parent_contact: str,
-        request_timestamp: datetime = None,
-        status: str = "PENDING",
-        warden_remarks: str = None,
-        decision_timestamp: datetime = None
-    ):
-        self.student_id = student_id
-        self.destination = destination
-        self.reason = reason
-        self.departure_datetime = departure_datetime
-        self.return_datetime = return_datetime
-        self.parent_contact = parent_contact
-        self.request_timestamp = request_timestamp or datetime.utcnow()
-        self.status = status
-        self.warden_remarks = warden_remarks
-        self.decision_timestamp = decision_timestamp
+from backend.app.db.database import Base
+
+
+class Outpass(Base):
+    __tablename__ = "outpasses"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    student_id: Mapped[str] = mapped_column(String(20), index=True)
+
+    destination: Mapped[str] = mapped_column(String(200))
+
+    reason: Mapped[str] = mapped_column(Text)
+
+    departure_datetime: Mapped[datetime] = mapped_column(DateTime)
+
+    return_datetime: Mapped[datetime] = mapped_column(DateTime)
+
+    parent_contact: Mapped[str] = mapped_column(String(20))
+
+    request_timestamp: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(20),
+        default="PENDING"
+    )
+
+    warden_remarks: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )
+
+    decision_timestamp: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True
+    )

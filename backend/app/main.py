@@ -5,6 +5,14 @@ from backend.app.api.outpass import router as outpass_router
 
 app = FastAPI(title="E-Outpass")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Allow frontend to communicate with backend during development
 app.add_middleware(
     CORSMiddleware,

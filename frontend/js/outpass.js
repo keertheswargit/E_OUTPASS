@@ -76,8 +76,13 @@ function displayCurrent(outpass) {
 }
 
 
-function displayHistory(history) {
-    historyData = history;
+function displayHistory(history, updateHistoryData = true) {
+
+    // Only update the original history when loading from the API.
+    // Do NOT replace it when applying filters.
+    if (updateHistoryData) {
+        historyData = history;
+    }
 
     const container = document.getElementById("history-container");
 
@@ -143,7 +148,9 @@ function displayHistory(history) {
     container.innerHTML = table;
 }
 
+
 function filterHistory() {
+
     const selectedStatus =
         document.getElementById("status-filter").value;
 
@@ -163,7 +170,8 @@ function filterHistory() {
         return matchesStatus && matchesSearch;
     });
 
-    displayHistory(filteredHistory);
+    // IMPORTANT: false means don't overwrite the original historyData
+    displayHistory(filteredHistory, false);
 }
 
 
@@ -177,9 +185,12 @@ document.getElementById("search-history").addEventListener(
     "input",
     filterHistory
 );
+
+
 document.getElementById("refresh-button").addEventListener(
     "click",
     loadOutpasses
 );
+
 
 loadOutpasses();

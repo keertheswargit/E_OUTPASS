@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 
 class OutpassResponse(BaseModel):
-    id: int
+    id: str
     student_id: str
     destination: str
     reason: str
@@ -18,7 +18,8 @@ class OutpassResponse(BaseModel):
     class Config:
         from_attributes = True
 
-        class StudentOutpassHistoryResponse(BaseModel):
+
+class StudentOutpassHistoryResponse(BaseModel):
     student_id: str
     current: OutpassResponse | None
     history: list[OutpassResponse]
